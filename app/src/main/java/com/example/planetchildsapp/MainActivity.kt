@@ -14,7 +14,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            PlanetChildsAppTheme() {
+            PlanetChildsAppTheme {
                 Scaffold { paddingValues ->
                     val navHost = rememberNavController()
                     AppNavHost(navHost, paddingValues)

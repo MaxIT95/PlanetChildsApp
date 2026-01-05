@@ -37,9 +37,9 @@ fun GreetingScreen(onNextClick: () -> Unit, paddingValues: PaddingValues) {
         Image(
             contentDescription = "фон",
             modifier = Modifier
-                .height(600.dp)
+                .height(500.dp)
                 .fillMaxWidth(),
-            contentScale = ContentScale.Crop,
+            contentScale = ContentScale.FillHeight,
             painter = painterResource(R.drawable.greeting_background),
         )
 

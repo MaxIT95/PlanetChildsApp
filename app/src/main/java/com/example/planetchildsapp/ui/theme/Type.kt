@@ -8,7 +8,6 @@ import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -19,10 +18,14 @@ val PlanetChildAppTypography = Typography(
         fontFamily = rubikSemiBoldFontFamily,
         fontWeight = FontWeight.Normal,
         fontSize = 22.sp),
-    titleMedium = TextStyle(
+    titleLarge = TextStyle(
         fontFamily = rubikSemiBoldFontFamily,
         fontWeight = FontWeight.Normal,
-        fontSize = 21.sp),
+        fontSize = 25.sp),
+    titleMedium = TextStyle(
+        fontFamily = rubikRegularFontFamily,
+        fontWeight = FontWeight.Normal,
+        fontSize = 23.sp),
     titleSmall = TextStyle(
         fontFamily = rubikRegularFontFamily,
         fontWeight = FontWeight.Normal,

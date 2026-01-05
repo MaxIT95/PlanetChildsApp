@@ -46,15 +46,17 @@ import com.example.planetchildsapp.ui.theme.SurfaceVariantColor
 
 @SuppressLint("ResourceAsColor")
 @Composable
-fun AuthorizationScreen(paddingValues: PaddingValues) {
+fun AuthorizationScreen(
+    paddingValues: PaddingValues,
+    onRegistrationClick: () -> Unit) {
     Background(paddingValues)
 
     Column(
         modifier = Modifier
-            .padding(top = 300.dp, bottom = 16.dp)
+            .padding(top = 250.dp, bottom = 16.dp)
             .fillMaxWidth()
     ) {
-        AuthAndRegistrationTextButton()
+        AuthAndRegistrationTextButton(true, onRegistrationClick, {})
         Spacer(Modifier.padding(20.dp))
         CommonTextHeader("Логин", 30)
 
@@ -127,7 +129,7 @@ fun Background(paddingValues: PaddingValues) {
         Image(
             contentDescription = "фон",
             modifier = Modifier
-                .height(350.dp)
+                .height(300.dp)
                 .fillMaxWidth(),
             contentScale = ContentScale.Crop,
             painter = painterResource(R.drawable.login_background),
@@ -136,7 +138,7 @@ fun Background(paddingValues: PaddingValues) {
             contentDescription = "фон",
             modifier = Modifier
                 .width(250.dp)
-                .height(240.dp)
+                .height(200.dp)
                 .align(Alignment.TopCenter)
                 .padding(top = 20.dp),
             painter = painterResource(R.drawable.small_icon_reg),
@@ -145,19 +147,25 @@ fun Background(paddingValues: PaddingValues) {
 }
 
 @Composable
-fun AuthAndRegistrationTextButton() {
+fun AuthAndRegistrationTextButton(
+    underLineLogin: Boolean, onRegistrationClick: () -> Unit,
+    onAuthorizationClick: () -> Unit
+) {
     Row(modifier = Modifier.fillMaxWidth()) {
         Column {
-            CommonTextButton("Войти", {})
-            UnderLinerForText(100)
+            CommonTextButton("Войти", onAuthorizationClick)
+            if (underLineLogin) {
+                UnderLinerForText(100)
+            }
         }
 
-        Spacer(Modifier.width(100.dp))
+        Spacer(Modifier.width(70.dp))
 
         Column(modifier = Modifier.padding(end = 10.dp)) {
-            CommonTextButton("Регистрация", {
-                //TODO добавить переход на экран регистрации
-            })
+            CommonTextButton("Регистрация", onRegistrationClick)
+            if (!underLineLogin) {
+                UnderLinerForText(185)
+            }
         }
     }
 }
@@ -269,7 +277,7 @@ fun LoginButton(onClick: () -> Unit) {
         ) {
             Text(
                 text = "Войти",
-                fontSize = 25.sp,
+                style = PlanetChildAppTypography.displayLarge,
             )
         }
     }
@@ -281,7 +289,7 @@ fun LoginButton(onClick: () -> Unit) {
 fun AuthorizationScreenPreview() {
     PlanetChildsAppTheme {
         Scaffold { paddingValues ->
-            AuthorizationScreen(paddingValues)
+            AuthorizationScreen(paddingValues, {})
         }
     }
 }

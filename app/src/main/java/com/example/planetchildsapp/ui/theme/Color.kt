@@ -1,6 +1,7 @@
 package com.example.planetchildsapp.ui.theme
 
 import androidx.compose.ui.graphics.Color
+import com.example.planetchildsapp.R
 
 val Purple80 = Color(0xFFD0BCFF)
 val PurpleGrey80 = Color(0xFFCCC2DC)
@@ -20,7 +21,7 @@ val AccentBlue = Color(0xFF525DC0) // Голубой для кнопки кат�
 val SliderTrackColor = Color(0xFFA1A9F9) // Светло-голубой для дорожки слайдера
 
 // Фоны
-val BackgroundColor = Color(0xFFF4FAFF) // Светло-голубой фон приложения
+//val BackgroundColor = Color(0xFFF4FAFF) // Светло-голубой фон приложения
 val SurfaceColor = Color(0xFFFFFFFF) // Белый фон карточек
 val SurfaceVariantColor = Color(0xFF303030) // Тёмно-серый для неактивных элементов
 val DividerColor = Color(0xFFF5F5F5) // Светло-серый для разделителей

@@ -7,4 +7,10 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="orange_registration">#FF7E00</color>
+    <color name="experimental">#fc086e</color>
+    <color name="not_active_grey">#887373</color>
+    <color name="second_gray">#DFD9D8</color>
+    <color name="orange_first">#FF7A00</color>
+    <color name="orange_second">#994900</color>
 </resources>

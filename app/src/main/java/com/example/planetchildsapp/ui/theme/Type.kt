@@ -14,6 +14,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 val PlanetChildAppTypography = Typography(
+    headlineMedium = TextStyle(
+        fontFamily = rubikRegularFontFamily,
+        fontWeight = FontWeight.Normal,
+        fontSize = 28.sp),
+    headlineSmall = TextStyle(
+        fontFamily = rubikRegularFontFamily,
+        fontWeight = FontWeight.Normal,
+        fontSize = 18.sp),
     displayLarge = TextStyle(
         fontFamily = rubikSemiBoldFontFamily,
         fontWeight = FontWeight.Normal,

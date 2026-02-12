@@ -1,7 +1,7 @@
-package com.example.planetchildsapp.screen
+package com.example.planetchildsapp.screen.enter
 
 import android.annotation.SuppressLint
-import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -14,18 +14,26 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,21 +42,33 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.rememberNavController
 import com.example.planetchildsapp.R
+import com.example.planetchildsapp.navigation.Destination
 import com.example.planetchildsapp.ui.theme.Orange
 import com.example.planetchildsapp.ui.theme.PlanetChildAppTypography
 import com.example.planetchildsapp.ui.theme.PlanetChildsAppTheme
 import com.example.planetchildsapp.ui.theme.SurfaceVariantColor
+import com.example.planetchildsapp.view_model.AuthorizationState
+import com.example.planetchildsapp.view_model.AuthorizationViewModel
+import kotlinx.coroutines.delay
 
 @SuppressLint("ResourceAsColor")
 @Composable
 fun AuthorizationScreen(
     paddingValues: PaddingValues,
-    onRegistrationClick: () -> Unit) {
+    navHost: NavHostController,
+    authViewModel: AuthorizationViewModel
+) {
     Background(paddingValues)
 
     Column(
@@ -56,45 +76,29 @@ fun AuthorizationScreen(
             .padding(top = 250.dp, bottom = 16.dp)
             .fillMaxWidth()
     ) {
-        AuthAndRegistrationTextButton(true, onRegistrationClick, {})
+        AuthHeader()
         Spacer(Modifier.padding(20.dp))
         CommonTextHeader("Логин", 30)
 
-        var login by remember { mutableStateOf("") }
-        var isLoginValid by remember { mutableStateOf(true) }
+        val state by authViewModel.uiState.collectAsState()
+        val errorState by authViewModel.errorsUiState.collectAsState()
 
-        LoginField(login, {
-            login = it
-            isLoginValid = login.isNotEmpty()
-        }, isLoginValid)
+        LoginField(state.login, {
+            authViewModel.onLoginChange(it)
+        }, errorState.isLoginValid)
 
         Spacer(Modifier.padding(15.dp))
         CommonTextHeader("Пароль", 30)
 
-        var password by remember { mutableStateOf("") }
-        var isPasswordValid by remember { mutableStateOf(true) }
+        PasswordField(state.password, {
 
-        PasswordField(password, {
-            password = it.filter { it.isDigit() }
-            password = if (it.length <= 4) it else it.take(4)
-            isPasswordValid = password.length == 4
-        }, isPasswordValid)
+            authViewModel.onPasswordChange(it)
+        }, errorState.isPasswordValid)
         Spacer(Modifier.padding(15.dp))
 
         ForgotPasswordButton()
 
-        LoginButton({
-            if (password.length != 4) {
-                isPasswordValid = false
-            }
-            if (login.isEmpty()) {
-                isLoginValid = false
-            }
-            if (isPasswordValid && isLoginValid) {
-                //TODO через viewModel собираем запрос на бэк (регистрация)
-                Log.i("******", "go!!!")
-            }
-        })
+        LoginButton(authViewModel, state, navHost)
     }
 }
 
@@ -114,7 +118,6 @@ fun ForgotPasswordButton() {
             color = Orange,
             fontSize = 15.sp,
             modifier = Modifier.clickable {
-
             })
     }
 }
@@ -147,39 +150,24 @@ fun Background(paddingValues: PaddingValues) {
 }
 
 @Composable
-fun AuthAndRegistrationTextButton(
-    underLineLogin: Boolean, onRegistrationClick: () -> Unit,
-    onAuthorizationClick: () -> Unit
-) {
+fun AuthHeader() {
     Row(modifier = Modifier.fillMaxWidth()) {
         Column {
-            CommonTextButton("Войти", onAuthorizationClick)
-            if (underLineLogin) {
-                UnderLinerForText(100)
-            }
-        }
-
-        Spacer(Modifier.width(70.dp))
-
-        Column(modifier = Modifier.padding(end = 10.dp)) {
-            CommonTextButton("Регистрация", onRegistrationClick)
-            if (!underLineLogin) {
-                UnderLinerForText(185)
-            }
+            CommonTextButton("Войти")
+            UnderLinerForText(100)
         }
     }
 }
 
 @Composable
-fun CommonTextButton(text: String, onClick: () -> Unit) {
+fun CommonTextButton(
+    text: String
+) {
     Text(
         text = text,
         style = PlanetChildAppTypography.titleMedium,
         modifier = Modifier
             .padding(start = 30.dp)
-            .clickable(
-                onClick = onClick
-            )
     )
 }
 
@@ -238,25 +226,43 @@ fun LoginField(text: String, onValueChange: (String) -> Unit, isValueValid: Bool
 
 @Composable
 fun PasswordField(text: String, onValueChange: (String) -> Unit, isPasswordValid: Boolean) {
+
+    var passwordVisible by remember { mutableStateOf(false) }
+
     OutlinedTextField(
+        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
         onValueChange = onValueChange,
         value = text,
         singleLine = true, label = {
-            Text("Введите пароль (4 цифры)")
+            Text("Введите пароль")
         }, leadingIcon = {
             Icon(
                 imageVector = Icons.Default.Key,
                 contentDescription = "Icon for login field"
             )
         },
+        trailingIcon = {
+            val image = if (passwordVisible)
+                Icons.Default.Visibility
+            else
+                Icons.Default.VisibilityOff
+
+            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                Icon(
+                    tint = MaterialTheme.colorScheme.secondary,
+                    imageVector = image,
+                    contentDescription = if (passwordVisible) "Hide password" else "Show password"
+                )
+            }
+        },
         shape = RoundedCornerShape(16.dp),
         colors = TextFieldDefaults.colors(
             errorContainerColor = Color.White,
             unfocusedIndicatorColor = Color.LightGray,
-//            focusedIndicatorColor = Color(R.color.second_gray),
             focusedIndicatorColor = SurfaceVariantColor,
             unfocusedContainerColor = Color.White,
-            focusedContainerColor = Color.White,
+            focusedLabelColor = SurfaceVariantColor,
+            focusedContainerColor = Color.White
         ),
         isError = !isPasswordValid,
         modifier = Modifier
@@ -266,19 +272,41 @@ fun PasswordField(text: String, onValueChange: (String) -> Unit, isPasswordValid
 }
 
 @Composable
-fun LoginButton(onClick: () -> Unit) {
+fun LoginButton(viewModel: AuthorizationViewModel, state: AuthorizationState, navHostController: NavHostController) {
+    val context = LocalContext.current
+
     Box(modifier = Modifier.fillMaxSize()) {
         Button(
-            onClick = onClick,
+            onClick = { viewModel.authorize() },
             modifier = Modifier
                 .width(250.dp)
                 .height(60.dp)
                 .align(Alignment.Center)
         ) {
-            Text(
-                text = "Войти",
-                style = PlanetChildAppTypography.displayLarge,
-            )
+
+            if (state.isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    color = Color.White
+                )
+            } else {
+                Text(
+                    text = "Войти",
+                    style = PlanetChildAppTypography.displayLarge,
+                )
+            }
+        }
+    }
+    LaunchedEffect(state.isSuccess) {
+        if (state.isSuccess) {
+            Toast.makeText(context, "Авторизация прошла успешно", Toast.LENGTH_SHORT).show()
+            navHostController.navigate(Destination.Home.route) {
+                popUpTo(Destination.Authorization.route) { inclusive = true }
+                launchSingleTop = true
+            }
+            //переход
+            delay(400)
+            viewModel.clearUiState()
         }
     }
 }
@@ -287,9 +315,14 @@ fun LoginButton(onClick: () -> Unit) {
 @Composable
 @Preview(showBackground = true, showSystemUi = true)
 fun AuthorizationScreenPreview() {
+    val navController = rememberNavController()
+
     PlanetChildsAppTheme {
         Scaffold { paddingValues ->
-            AuthorizationScreen(paddingValues, {})
+            AuthorizationScreen(
+                paddingValues, navController,
+                viewModel()
+            )
         }
     }
 }

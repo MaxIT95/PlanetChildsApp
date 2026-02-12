@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.kapt)
+    alias(libs.plugins.hilt.android)
 }
 
 android {
@@ -54,6 +56,21 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.material3.icons)
     implementation(libs.androidx.ui.graphics)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.gson)
+    implementation(libs.moshi)
+    implementation(libs.moshi.kotlin)
+    implementation(libs.moshi.adapters)
+    implementation(libs.corutines)
+    implementation(libs.stdlib)
+    implementation(libs.security)
+    implementation("com.squareup.okhttp3:logging-interceptor:5.0.0-alpha.11")
+    
+    // Hilt
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.compiler)
+    implementation(libs.hilt.navigation.compose)
+    
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

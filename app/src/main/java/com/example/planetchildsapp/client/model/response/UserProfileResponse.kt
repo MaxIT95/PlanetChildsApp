@@ -8,12 +8,18 @@ data class UserProfileResponse(
     @SerialName("id")
     val id: Long,
     
-    @SerialName("userId")
-    val userId: Long,
-    
     @SerialName("email")
     val email: String? = null,
     
-    @SerialName("profileContent")
-    val profileContent: ProfileContentResponse? = null
+    @SerialName("name")
+    val name: String? = null,
+    
+    @SerialName("createdAt")
+    val createdAt: String? = null,
+    
+    @SerialName("updatedAt")
+    val updatedAt: String? = null,
+    
+    @SerialName("profile")
+    val profile: ProfileResponse? = null
 )

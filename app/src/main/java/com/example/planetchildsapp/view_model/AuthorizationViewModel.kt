@@ -5,9 +5,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.planetchildsapp.client.apis.UserApi
 import com.example.planetchildsapp.client.model.request.AuthUserRequest
-import com.example.planetchildsapp.configuration.RetrofitClient
-import com.example.planetchildsapp.service.TokenStorage
+import com.example.planetchildsapp.client.model.request.RefreshTokenRequest
+import com.example.planetchildsapp.service.SecretStorage
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,8 +17,8 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class AuthorizationState(
-    val login: String = "user@example.com",
-    val password: String = "SecurePass123!",
+    val login: String = "",
+    val password: String = "",
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val isSuccess: Boolean = false
@@ -30,14 +31,70 @@ data class AuthorizationErrors(
 
 @HiltViewModel
 class AuthorizationViewModel @Inject constructor(
-    private val tokenStorage: TokenStorage,
+    private val secretStorage: SecretStorage,
     private val userApi: UserApi
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(AuthorizationState())
+    private val _uiState = MutableStateFlow(initAuthState())
     private val _errorsUuiState = MutableStateFlow(AuthorizationErrors())
     val uiState: StateFlow<AuthorizationState> = _uiState.asStateFlow()
     val errorsUiState: StateFlow<AuthorizationErrors> = _errorsUuiState.asStateFlow()
+    private val _resultAuthorize = MutableStateFlow(false)
+    val resultAuth: StateFlow<Boolean> = _resultAuthorize
+
+    private fun initAuthState(): AuthorizationState {
+        val login = secretStorage.getLogin()
+        val password = secretStorage.getLogin()
+
+        if (login != null && password != null) {
+            return AuthorizationState(login = login, password = password)
+        }
+        return AuthorizationState()
+    }
+
+    /**
+    метод для проверки наличия токена,
+    автовхода и автоматического обновления через рефреш
+     */
+    fun checkActualToken() {
+        Log.i("+++", "Проверяю наличие токена...")
+        val token = secretStorage.getAccessToken()
+
+        if (token != null &&
+            token.isNotEmpty()
+        ) {
+            Log.i("+++", "Ура, токен есть, но надо проверить его актуальность")
+            viewModelScope.async {
+                val currentUser = userApi.getCurrentUser()
+
+                if (currentUser.isSuccessful) {
+                    Log.i("+++", "Отлично, токен актуальный")
+                    _resultAuthorize.value = true
+                } else {
+                    Log.e("+++", "Токен просрочен...")
+                    val refreshToken = secretStorage.getRefreshToken()
+
+                    if (refreshToken != null) {
+                        val refreshResponse =
+                            userApi.refreshToken(
+                                request = RefreshTokenRequest(refreshToken)
+                            )
+                        if (refreshResponse.isSuccessful) {
+                            Log.i("+++", "Токен успешно обновлен!")
+                            _resultAuthorize.value = true
+                        } else {
+                            Log.e("+++", "refreshToken не сработал...")
+                            _resultAuthorize.value = false
+                        }
+                    } else {
+                        _resultAuthorize.value = false
+                    }
+                }
+            }
+        } else {
+            _resultAuthorize.value = false
+        }
+    }
 
     fun onLoginChange(login: String) {
         _uiState.update { it.copy(login = login) }
@@ -59,8 +116,6 @@ class AuthorizationViewModel @Inject constructor(
     }
 
     fun authorize() {
-
-        Log.i("+++", "go")
         viewModelScope.launch {
             val state = _uiState.value
 
@@ -70,7 +125,6 @@ class AuthorizationViewModel @Inject constructor(
                     isPasswordValid = state.password.isNotEmpty() && state.password.length >= 8
                 )
             }
-            Log.i("+++", "go222")
 
             if (_errorsUuiState.value.isLoginValid && _errorsUuiState.value.isPasswordValid) {
                 _uiState.update { it.copy(isLoading = true, errorMessage = null) }
@@ -82,22 +136,33 @@ class AuthorizationViewModel @Inject constructor(
                 if (response.isSuccessful) {
                     val body = response.body()
                     if (body != null) {
-                        tokenStorage.saveTokens(body.accessToken, body.refreshToken)
+                        secretStorage.saveTokens(body.accessToken, body.refreshToken)
+                        secretStorage.saveLogin(state.login)
+                        secretStorage.savePassword(state.password)
+
                         _uiState.update { it.copy(isLoading = false, isSuccess = true) }
                     } else {
                         _uiState.update {
                             it.copy(
                                 isLoading = false,
-                                errorMessage = "РџСѓСЃС‚РѕР№ РѕС‚РІРµС‚ РѕС‚ СЃРµСЂРІРµСЂР°"
+                                errorMessage = "Ерунда...°"
                             )
                         }
                     }
                 } else {
-                    _uiState.update { it.copy(isLoading = false, errorMessage = "РћС€РёР±РєР° СЃРµС‚Рё") }
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = "РћС€РёР±РєР° СЃРµС‚Рё"
+                        )
+                    }
                 }
             } else {
                 _uiState.update {
-                    it.copy(isLoading = false, errorMessage = "РћС€РёР±РєР° Р°РІС‚РѕСЂРёР·Р°С†РёРё")
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = "РћС€РёР±РєР° Р°РІС‚РѕСЂРёР·Р°С†РёРё"
+                    )
                 }
             }
         }

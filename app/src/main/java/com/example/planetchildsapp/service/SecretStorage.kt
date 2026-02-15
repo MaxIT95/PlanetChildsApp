@@ -5,7 +5,7 @@ import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import androidx.core.content.edit
 
-class TokenStorage(context: Context) {
+class SecretStorage(context: Context) {
 
     private val sharedPrefsName = "secure_prefs"
 
@@ -24,6 +24,28 @@ class TokenStorage(context: Context) {
     companion object {
         private const val KEY_ACCESS_TOKEN = "access_token"
         private const val KEY_REFRESH_TOKEN = "refresh_token"
+        private const val LOGIN = "login"
+        private const val PASSWORD = "password"
+    }
+
+    fun saveLogin(login: String) {
+        prefs.edit {
+            putString(LOGIN, login)
+        }
+    }
+
+    fun savePassword(password: String) {
+        prefs.edit {
+            putString(PASSWORD, password)
+        }
+    }
+
+    fun getLogin(): String? {
+        return prefs.getString(LOGIN, null)
+    }
+
+    fun getPassword(): String? {
+        return prefs.getString(PASSWORD, null)
     }
 
     fun saveTokens(accessToken: String, refreshToken: String) {

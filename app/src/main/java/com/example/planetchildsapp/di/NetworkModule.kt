@@ -7,7 +7,7 @@ import com.example.planetchildsapp.client.apis.DictServiceApi
 import com.example.planetchildsapp.client.apis.DictServicePlaceApi
 import com.example.planetchildsapp.client.apis.UserApi
 import com.example.planetchildsapp.configuration.RetrofitClient
-import com.example.planetchildsapp.service.TokenStorage
+import com.example.planetchildsapp.service.SecretStorage
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -21,7 +21,7 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideRetrofitClient(tokenStorage: TokenStorage): RetrofitClient {
+    fun provideRetrofitClient(tokenStorage: SecretStorage): RetrofitClient {
         return RetrofitClient(tokenStorage)
     }
 

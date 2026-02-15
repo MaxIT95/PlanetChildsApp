@@ -22,6 +22,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.planetchildsapp.R
@@ -32,9 +33,8 @@ import com.example.planetchildsapp.ui.theme.PlanetChildsAppTheme
 @Composable
 fun GreetingScreen(
     navHost: NavHostController,
-    paddingValues: PaddingValues
+    paddingValues: PaddingValues,
 ) {
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -106,6 +106,9 @@ fun ContinueArrowButton(navHost: NavHostController) {
 fun GreetingScreenPreview() {
     PlanetChildsAppTheme {
         val navController = rememberNavController()
-        GreetingScreen(navController, PaddingValues(0.dp))
+        GreetingScreen(
+            navController,
+            PaddingValues(0.dp),
+        )
     }
 }

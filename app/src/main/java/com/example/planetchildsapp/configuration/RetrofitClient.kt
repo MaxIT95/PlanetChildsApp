@@ -1,6 +1,6 @@
 package com.example.planetchildsapp.configuration
 
-import com.example.planetchildsapp.service.TokenStorage
+import com.example.planetchildsapp.service.SecretStorage
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -8,7 +8,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 const val DEFAULT_URL = "http://45.153.71.197:8081/"
 
-class RetrofitClient(private val tokenStorage: TokenStorage) {
+class RetrofitClient(private val tokenStorage: SecretStorage) {
 
     val retrofit: Retrofit = buildRetrofit()
 

@@ -1,7 +1,7 @@
 package com.example.planetchildsapp.di
 
 import android.content.Context
-import com.example.planetchildsapp.service.TokenStorage
+import com.example.planetchildsapp.service.SecretStorage
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -15,7 +15,7 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideTokenStorage(@ApplicationContext context: Context): TokenStorage {
-        return TokenStorage(context)
+    fun provideTokenStorage(@ApplicationContext context: Context): SecretStorage {
+        return SecretStorage(context)
     }
 }

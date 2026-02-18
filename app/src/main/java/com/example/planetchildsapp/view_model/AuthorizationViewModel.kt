@@ -44,7 +44,7 @@ class AuthorizationViewModel @Inject constructor(
 
     private fun initAuthState(): AuthorizationState {
         val login = secretStorage.getLogin()
-        val password = secretStorage.getLogin()
+        val password = secretStorage.getPassword()
 
         if (login != null && password != null) {
             return AuthorizationState(login = login, password = password)
@@ -153,7 +153,6 @@ class AuthorizationViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = "РћС€РёР±РєР° СЃРµС‚Рё"
                         )
                     }
                 }
@@ -161,7 +160,6 @@ class AuthorizationViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = "РћС€РёР±РєР° Р°РІС‚РѕСЂРёР·Р°С†РёРё"
                     )
                 }
             }

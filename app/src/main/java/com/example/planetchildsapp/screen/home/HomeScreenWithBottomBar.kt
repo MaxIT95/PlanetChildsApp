@@ -82,7 +82,7 @@ fun HomeScreenWithBottomBar() {
                     EventScreen(navController)
                 }
                 composable(Destination.Profile.route) {
-                    ProfileScreen(navController)
+                    ProfileScreen(navController, hiltViewModel())
                 }
             }
         }

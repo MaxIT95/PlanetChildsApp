@@ -42,14 +42,14 @@ fun AppNavHost(
             // Навигация в зависимости от результата
             LaunchedEffect(isAuthenticated) {
                 delay(2000)
-//                if (isAuthenticated) {
-//                    navHostController.navigate(Destination.Home.route) {
-//                        popUpTo(Destination.Splash.route) { inclusive = true }
-//                    }
-//                } else {
+                if (isAuthenticated) {
+                    navHostController.navigate(Destination.Home.route) {
+                        popUpTo(Destination.Splash.route) { inclusive = true }
+                    }
+                } else {
                     navHostController.navigate(Destination.Greeting.route) {
                         popUpTo(Destination.Splash.route) { inclusive = true }
-//                    }
+                    }
                 }
             }
             // Показываем Splash UI во время проверки

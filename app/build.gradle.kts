@@ -65,6 +65,7 @@ dependencies {
     implementation(libs.stdlib)
     implementation(libs.security)
     implementation("androidx.compose.foundation:foundation:1.4.0")
+    implementation("androidx.datastore:datastore-preferences:1.1.0")
     implementation("com.squareup.okhttp3:logging-interceptor:5.0.0-alpha.11")
     implementation("io.coil-kt:coil-compose:2.2.2")
     // Hilt

@@ -7,7 +7,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.planetchildsapp.R
 import com.example.planetchildsapp.client.apis.UserApi
-import com.example.planetchildsapp.repository.UserPrefsRepository
+import com.example.planetchildsapp.data.repository.UserPrefsRepository
+import com.example.planetchildsapp.service.SecretStorage
 import com.example.planetchildsapp.utils.saveImageToInternalStorage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -30,6 +31,7 @@ data class ProfileState(
 class ProfileViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val userApi: UserApi,
+    private val secretStorage: SecretStorage,
     private val userPrefsRepository: UserPrefsRepository,
 ) : ViewModel() {
 
@@ -63,10 +65,10 @@ class ProfileViewModel @Inject constructor(
                         email = cachedData.email,
                         isLoading = false
                     )
-                } else {
-                    // Шаг 2: Данных нет - загружаем с сервера
-                    Log.i("ProfileViewModel", "Данных в DataStore нет, загружаем с сервера...")
-                    fetchUserFromApi()
+//                } else {
+////                    // Шаг 2: Данных нет - загружаем с сервера
+////                    Log.i("ProfileViewModel", "Данных в DataStore нет, загружаем с сервера...")
+////                    fetchUserFromApi()
                 }
             } catch (e: Exception) {
                 Log.e("ProfileViewModel", "Ошибка загрузки данных", e)
@@ -97,14 +99,14 @@ class ProfileViewModel @Inject constructor(
             try {
                 // Сохраняем изображение в internal storage
                 val savedPath = context.saveImageToInternalStorage(uri)
-                
+
                 if (savedPath != null) {
                     // Сохраняем путь в DataStore
                     userPrefsRepository.saveAvatarUrl(savedPath)
-                    
+
                     // Обновляем UI
                     _profileState.value = _profileState.value.copy(avatarPath = savedPath)
-                    
+
                     Log.i("ProfileViewModel", "Аватар сохранен: $savedPath")
                 } else {
                     Log.e("ProfileViewModel", "Ошибка сохранения аватара")
@@ -124,67 +126,69 @@ class ProfileViewModel @Inject constructor(
     /**
      * Загрузка данных пользователя с сервера
      */
-    private suspend fun fetchUserFromApi() {
-        try {
-            val response = userApi.getCurrentUser()
-
-            if (response.isSuccessful) {
-                val userInfo = response.body()
-
-                if (userInfo != null && userInfo.name != null && userInfo.email != null) {
-                    Log.i("ProfileViewModel", "Получены данные с сервера: $userInfo")
-
-                    // Сохраняем в DataStore для будущих запусков
-                    userPrefsRepository.saveUserPrefs(
-                        name = userInfo.name,
-                        email = userInfo.email,
-                        avatarUrl = null // TODO: добавить поддержку avatar URL из API
-                    )
-
-                    // Обновляем UI
-                    _profileState.value = _profileState.value.copy(
-                        name = userInfo.name,
-                        email = userInfo.email,
-                        isLoading = false
-                    )
-                } else {
-                    Log.w("ProfileViewModel", "Получены некорректные данные с сервера")
-                    _profileState.value = _profileState.value.copy(
-                        isLoading = false,
-                        error = "Получены неполные данные с сервера"
-                    )
-                }
-            } else {
-                Log.e("ProfileViewModel", "Ошибка HTTP: ${response.code()}")
-                _profileState.value = _profileState.value.copy(
-                    isLoading = false,
-                    error = "Ошибка сервера: ${response.code()}"
-                )
-            }
-        } catch (e: Exception) {
-            Log.e("ProfileViewModel", "Ошибка сетевого запроса", e)
-            _profileState.value = _profileState.value.copy(
-                isLoading = false,
-                error = "Ошибка сети: ${e.message}"
-            )
-        }
-    }
+//    private suspend fun fetchUserFromApi() {
+//        try {
+//            val response = userApi.getCurrentUser()
+//
+//            if (response.isSuccessful) {
+//                val userInfo = response.body()
+//
+//                if (userInfo != null && userInfo.name != null && userInfo.email != null) {
+//                    Log.i("ProfileViewModel", "Получены данные с сервера: $userInfo")
+//
+//                    // Сохраняем в DataStore для будущих запусков
+//                    userPrefsRepository.saveUserPrefs(
+//                        name = userInfo.name,
+//                        email = userInfo.email,
+//                        role = userInfo.role,
+//                        avatarUrl = null // TODO: добавить поддержку avatar URL из API
+//                    )
+//
+//                    // Обновляем UI
+//                    _profileState.value = _profileState.value.copy(
+//                        name = userInfo.name,
+//                        email = userInfo.email,
+//                        isLoading = false
+//                    )
+//                } else {
+//                    Log.w("ProfileViewModel", "Получены некорректные данные с сервера")
+//                    _profileState.value = _profileState.value.copy(
+//                        isLoading = false,
+//                        error = "Получены неполные данные с сервера"
+//                    )
+//                }
+//            } else {
+//                Log.e("ProfileViewModel", "Ошибка HTTP: ${response.code()}")
+//                _profileState.value = _profileState.value.copy(
+//                    isLoading = false,
+//                    error = "Ошибка сервера: ${response.code()}"
+//                )
+//            }
+//        } catch (e: Exception) {
+//            Log.e("ProfileViewModel", "Ошибка сетевого запроса", e)
+//            _profileState.value = _profileState.value.copy(
+//                isLoading = false,
+//                error = "Ошибка сети: ${e.message}"
+//            )
+//        }
+//    }
 
     /**
      * Принудительная перезагрузка данных с сервера
      */
-    fun refreshUserInfo() {
-        viewModelScope.launch {
-            _profileState.value = _profileState.value.copy(isLoading = true, error = null)
-            fetchUserFromApi()
-        }
-    }
+//    fun refreshUserInfo() {
+//        viewModelScope.launch {
+//            _profileState.value = _profileState.value.copy(isLoading = true, error = null)
+//            fetchUserFromApi()
+//        }
+//    }
 
     /**
      * Выход из аккаунта - очистка данных
      */
     fun logout() {
         viewModelScope.launch {
+            secretStorage.clearTokens()
             userPrefsRepository.clearUserPrefs()
             _profileState.value = ProfileState() // Сброс в дефолтное состояние
             Log.i("ProfileViewModel", "Пользователь вышел из аккаунта")

@@ -1,4 +1,4 @@
-package com.example.planetchildsapp.screen.enter
+package com.example.planetchildsapp.ui.screen.enter
 
 import android.annotation.SuppressLint
 import android.widget.Toast
@@ -53,7 +53,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.planetchildsapp.R
-import com.example.planetchildsapp.navigation.Destination
+import com.example.planetchildsapp.ui.navigation.Destination
 import com.example.planetchildsapp.ui.theme.Orange
 import com.example.planetchildsapp.ui.theme.PlanetChildAppTypography
 import com.example.planetchildsapp.ui.theme.PlanetChildsAppTheme

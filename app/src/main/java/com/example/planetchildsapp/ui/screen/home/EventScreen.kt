@@ -1,4 +1,4 @@
-package com.example.planetchildsapp.screen.home
+package com.example.planetchildsapp.ui.screen.home
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview

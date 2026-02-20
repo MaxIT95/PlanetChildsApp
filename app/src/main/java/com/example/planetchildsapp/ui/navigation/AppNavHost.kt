@@ -1,4 +1,4 @@
-package com.example.planetchildsapp.navigation
+package com.example.planetchildsapp.ui.navigation
 
 import HomeScreenWithBottomBar
 import androidx.compose.foundation.layout.PaddingValues
@@ -11,11 +11,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.example.planetchildsapp.screen.enter.AuthorizationScreen
-import com.example.planetchildsapp.screen.enter.EnterScreen
-import com.example.planetchildsapp.screen.enter.GreetingScreen
-import com.example.planetchildsapp.screen.enter.RegistrationScreen
-import com.example.planetchildsapp.screen.enter.SplashScreen
+import com.example.planetchildsapp.ui.screen.enter.AuthorizationScreen
+import com.example.planetchildsapp.ui.screen.enter.EnterScreen
+import com.example.planetchildsapp.ui.screen.enter.GreetingScreen
+import com.example.planetchildsapp.ui.screen.enter.RegistrationScreen
+import com.example.planetchildsapp.ui.screen.enter.SplashScreen
+import com.example.planetchildsapp.ui.screen.home.EditProfileScreen
 import com.example.planetchildsapp.view_model.AuthorizationViewModel
 import com.example.planetchildsapp.view_model.RegistrationViewModel
 import kotlinx.coroutines.delay
@@ -83,7 +84,8 @@ fun AppNavHost(
         }
 
         composable(route = Destination.Home.route) {
-            HomeScreenWithBottomBar()
+
+            HomeScreenWithBottomBar(navHostController)
         }
     }
 }

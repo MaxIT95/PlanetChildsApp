@@ -1,4 +1,4 @@
-package com.example.planetchildsapp.screen.enter
+package com.example.planetchildsapp.ui.screen.enter
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Column
@@ -21,7 +21,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
-import com.example.planetchildsapp.navigation.Destination
+import com.example.planetchildsapp.ui.navigation.Destination
 import com.example.planetchildsapp.ui.theme.PlanetChildsAppTheme
 
 @Composable

@@ -1,4 +1,4 @@
-package com.example.planetchildsapp.repository
+package com.example.planetchildsapp.data.repository
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
@@ -13,6 +13,7 @@ import javax.inject.Singleton
 data class UserPrefsData(
     val name: String? = null,
     val email: String? = null,
+    val role: String? = null,
     val avatarUrl: String? = null
 )
 
@@ -24,6 +25,7 @@ class UserPrefsRepository @Inject constructor(
     companion object {
         private val NAME_KEY = stringPreferencesKey("name")
         private val EMAIL_KEY = stringPreferencesKey("email")
+        private val ROLE_KEY = stringPreferencesKey("role")
         private val AVATAR_URL_KEY = stringPreferencesKey("avatar_url")
     }
 
@@ -33,6 +35,7 @@ class UserPrefsRepository @Inject constructor(
             UserPrefsData(
                 name = preferences[NAME_KEY],
                 email = preferences[EMAIL_KEY],
+                role = preferences[ROLE_KEY],
                 avatarUrl = preferences[AVATAR_URL_KEY]
             )
         }
@@ -48,6 +51,11 @@ class UserPrefsRepository @Inject constructor(
             preferences[EMAIL_KEY]
         }
 
+    val roleFlow: Flow<String?> = dataStore.data
+        .map { preferences ->
+            preferences[ROLE_KEY]
+        }
+
     val avatarUrlFlow: Flow<String?> = dataStore.data
         .map { preferences ->
             preferences[AVATAR_URL_KEY]
@@ -59,10 +67,11 @@ class UserPrefsRepository @Inject constructor(
     }
 
     // Сохранить все данные одной транзакцией
-    suspend fun saveUserPrefs(name: String, email: String, avatarUrl: String?) {
+    suspend fun saveUserPrefs(name: String, email: String, role: String, avatarUrl: String?) {
         dataStore.edit { preferences ->
             preferences[NAME_KEY] = name
             preferences[EMAIL_KEY] = email
+            preferences[ROLE_KEY] = role
             if (avatarUrl != null) {
                 preferences[AVATAR_URL_KEY] = avatarUrl
             }
@@ -82,6 +91,12 @@ class UserPrefsRepository @Inject constructor(
         }
     }
 
+    suspend fun saveRole(role: String) {
+        dataStore.edit { preferences ->
+            preferences[ROLE_KEY] = role
+        }
+    }
+
     suspend fun saveAvatarUrl(url: String) {
         dataStore.edit { preferences ->
             preferences[AVATAR_URL_KEY] = url
@@ -93,6 +108,7 @@ class UserPrefsRepository @Inject constructor(
         dataStore.edit { preferences ->
             preferences.remove(NAME_KEY)
             preferences.remove(EMAIL_KEY)
+            preferences.remove(ROLE_KEY)
             preferences.remove(AVATAR_URL_KEY)
         }
     }

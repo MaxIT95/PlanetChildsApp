@@ -1,5 +1,6 @@
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,19 +18,21 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.planetchildsapp.R
-import com.example.planetchildsapp.navigation.BottomNavigation
-import com.example.planetchildsapp.navigation.Destination
-import com.example.planetchildsapp.screen.home.EventScreen
-import com.example.planetchildsapp.screen.home.ProfileScreen
-import com.example.planetchildsapp.screen.home.ScheduleScreen
+import com.example.planetchildsapp.ui.navigation.BottomNavigation
+import com.example.planetchildsapp.ui.navigation.Destination
+import com.example.planetchildsapp.ui.screen.home.EditProfileScreen
+import com.example.planetchildsapp.ui.screen.home.EventScreen
+import com.example.planetchildsapp.ui.screen.home.ProfileScreen
+import com.example.planetchildsapp.ui.screen.home.ScheduleScreen
 
 @Composable
-fun HomeScreenWithBottomBar() {
+fun HomeScreenWithBottomBar(oldNavHost: NavHostController) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -73,16 +76,25 @@ fun HomeScreenWithBottomBar() {
             NavHost(
                 navController = navController,
                 startDestination = Destination.Schedule.route,
+                modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding())
             ) {
                 composable(Destination.Schedule.route) {
-                    ScheduleScreen(navController,
-                        hiltViewModel())
+                    ScheduleScreen(
+                        navController,
+                        hiltViewModel()
+                    )
                 }
+
                 composable(Destination.Events.route) {
                     EventScreen(navController)
                 }
+
                 composable(Destination.Profile.route) {
                     ProfileScreen(navController, hiltViewModel())
+                }
+
+                composable(route = Destination.EditProfile.route) {
+                    EditProfileScreen(navController, oldNavHost, hiltViewModel())
                 }
             }
         }

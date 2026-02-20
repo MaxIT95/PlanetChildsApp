@@ -1,4 +1,4 @@
-package com.example.planetchildsapp.screen.home
+package com.example.planetchildsapp.ui.screen.home
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -27,14 +27,14 @@ import com.example.planetchildsapp.view_model.ProfileViewModel
 
 @Composable
 fun AvatarTopBar(
-    onClick: () -> Unit, profileViewModel: ProfileViewModel
+    onClick: () -> Unit, profileViewModel: ProfileViewModel,
 ) {
 
     val userInfo by profileViewModel.profileState.collectAsState()
 
     Row(
         modifier = Modifier
-            .padding(vertical = 8.dp, horizontal = 16.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
             .fillMaxWidth()
             .height(45.dp)
     ) {

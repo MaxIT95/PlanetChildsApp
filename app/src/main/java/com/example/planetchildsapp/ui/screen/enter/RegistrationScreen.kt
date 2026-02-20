@@ -1,4 +1,4 @@
-package com.example.planetchildsapp.screen.enter
+package com.example.planetchildsapp.ui.screen.enter
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.Image

@@ -9,7 +9,8 @@ class AuthInterceptor(private val tokenProvider: () -> String?) : Interceptor {
         val url = originalRequest.url.toString()
         
         // Не добавляем токен к запросам авторизации и регистрации
-        if (url.contains("/login") || url.contains("/register")) {
+        if (url.contains("/login") || url.contains("/register")
+            || url.contains("/refresh")) {
             return chain.proceed(originalRequest)
         }
         

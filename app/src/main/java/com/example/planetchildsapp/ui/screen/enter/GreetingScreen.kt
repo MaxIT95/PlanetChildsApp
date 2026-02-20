@@ -1,4 +1,4 @@
-package com.example.planetchildsapp.screen.enter
+package com.example.planetchildsapp.ui.screen.enter
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.planetchildsapp.R
-import com.example.planetchildsapp.navigation.Destination
+import com.example.planetchildsapp.ui.navigation.Destination
 import com.example.planetchildsapp.ui.theme.PlanetChildAppTypography
 import com.example.planetchildsapp.ui.theme.PlanetChildsAppTheme
 

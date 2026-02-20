@@ -1,4 +1,4 @@
-package com.example.planetchildsapp.screen.home
+package com.example.planetchildsapp.ui.screen.home
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -33,8 +33,19 @@ fun ScheduleScreen(
 @Composable
 fun ScheduleCards() {
     LazyColumn (modifier = Modifier
-        .padding(bottom = 105.dp).padding(vertical = 8.dp, horizontal = 8.dp)) {
+        .padding(vertical = 8.dp, horizontal = 8.dp)
+    ) {
         item {
+            ScheduleCard()
+            Spacer(Modifier.padding(vertical = 5.dp))
+            ScheduleCard()
+            Spacer(Modifier.padding(vertical = 5.dp))
+            ScheduleCard()
+            Spacer(Modifier.padding(vertical = 5.dp))
+            ScheduleCard()
+            Spacer(Modifier.padding(vertical = 5.dp))
+            ScheduleCard()
+            Spacer(Modifier.padding(vertical = 5.dp))
             ScheduleCard()
             Spacer(Modifier.padding(vertical = 5.dp))
           }

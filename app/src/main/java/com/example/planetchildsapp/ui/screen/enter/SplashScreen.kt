@@ -1,4 +1,4 @@
-package com.example.planetchildsapp.screen.enter
+package com.example.planetchildsapp.ui.screen.enter
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement

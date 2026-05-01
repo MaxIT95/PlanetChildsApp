@@ -7,13 +7,10 @@ import kotlinx.serialization.Serializable
 data class SearchUserResponse(
     @SerialName("id")
     val id: Long,
-    
-    @SerialName("username")
-    val username: String,
-    
+
     @SerialName("email")
-    val email: String,
-    
-    @SerialName("role")
-    val role: String
+    val email: String? = null,
+
+    @SerialName("name")
+    val name: String? = null
 )

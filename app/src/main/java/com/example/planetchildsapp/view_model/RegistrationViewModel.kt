@@ -5,7 +5,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.planetchildsapp.client.apis.UserApi
 import com.example.planetchildsapp.client.model.enums.Role
+import com.example.planetchildsapp.client.model.request.AuthUserRequest
 import com.example.planetchildsapp.client.model.request.UserRegistrationRequest
+import com.example.planetchildsapp.data.model.parseToken
+import com.example.planetchildsapp.data.repository.UserPrefsRepository
+import com.example.planetchildsapp.service.SecretStorage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,20 +22,25 @@ data class RegistrationState(
     val email: String = "",
     val name: String = "",
     val password: String = "",
+    val repeatPassword: String = "",
     val isLoading: Boolean = false,
-    val errorMessage: String? = null,
+//    val errorMessage: String? = null,
     val isSuccess: Boolean = false
 )
 
 data class RegistrationErrors(
     val isNameValid: Boolean = true,
     val isEmailValid: Boolean = true,
-    val isPasswordValid: Boolean = true
+    val isPasswordValid: Boolean = true,
+    val errorMessage: String? = null,
+    val isRepeatPasswordValid: Boolean = true
 )
 
 @HiltViewModel
 class RegistrationViewModel @Inject constructor(
-    private val userApi: UserApi
+    private val secretStorage: SecretStorage,
+    private val userApi: UserApi,
+    private val userPrefsRepository: UserPrefsRepository
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(RegistrationState())
     val uiState: StateFlow<RegistrationState> = _uiState.asStateFlow()
@@ -44,21 +53,40 @@ class RegistrationViewModel @Inject constructor(
             it.copy(name = newName)
         }
         _errorsUuiState.update {
-            it.copy(isNameValid = newName.isNotEmpty())
+            it.copy(
+                isNameValid = newName.isNotEmpty(),
+                errorMessage = null
+            )
         }
     }
 
     fun onEmailChange(newEmail: String) {
         _uiState.update { it.copy(email = newEmail) }
         _errorsUuiState.update {
-            it.copy(isEmailValid = newEmail.isEmpty())
+            it.copy(
+                isEmailValid = newEmail.isNotEmpty(),
+                errorMessage = null
+            )
+        }
+    }
+
+    fun onRepeatPasswordChange(newEmail: String) {
+        _uiState.update { it.copy(repeatPassword = newEmail) }
+        _errorsUuiState.update {
+            it.copy(
+                isRepeatPasswordValid = _uiState.value.password == newEmail,
+                errorMessage = null
+            )
         }
     }
 
     fun onPasswordChange(newPassword: String) {
         _uiState.update { it.copy(password = newPassword) }
         _errorsUuiState.update {
-            it.copy(isPasswordValid = newPassword.isEmpty())
+            it.copy(
+                isPasswordValid = newPassword.isNotEmpty(),
+                errorMessage = null
+            )
         }
     }
 
@@ -69,50 +97,81 @@ class RegistrationViewModel @Inject constructor(
             it.copy(
                 isNameValid = state.name.isNotEmpty(),
                 isEmailValid = state.email.isNotEmpty(),
-                isPasswordValid = state.password.isNotEmpty()
+                isPasswordValid = state.password.isNotEmpty(),
+                isRepeatPasswordValid = state.repeatPassword.isNotEmpty() &&
+                        state.repeatPassword == state.password
             )
         }
-
+        Log.i("+++", "Привет!")
         // Валидация
         if (errorsUiState.value.isNameValid &&
             errorsUiState.value.isEmailValid &&
+            errorsUiState.value.isRepeatPasswordValid &&
             errorsUiState.value.isPasswordValid
         ) {
-            _uiState.update { it.copy(errorMessage = null) }
             viewModelScope.launch {
                 try {
-                    _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-                    // имитация запроса регистрации
-                    //            delay(2000)
+                    _uiState.update { it.copy(isLoading = true) }
+
                     val response = userApi.registerUser(
                         UserRegistrationRequest(
                             role = Role.PARENT,
-                            lastName = "Max",
-                            firstName = "Max",
-                            middleName = "Max",
-                            email = "max@mail.ru",
-                            password = "1234"
+                            lastName = " ",
+                            firstName = state.name,
+                            middleName = " ",
+                            email = state.email,
+                            password = state.password
                         )
                     )
-                    Log.i("***", "сделал запрос")
-//                    val success = response.isSuccessful
 
-//                    if (success) {
-//                        _uiState.update { it.copy(isLoading = false, isSuccess = true) }
-//                    } else {
-//                        _uiState.update {
-//                            it.copy(
-//                                isLoading = false,
-//                                errorMessage = "Ошибка регистрации"
-//                            )
-//                        }
-//                    }
+                    if (response.isSuccessful) {
+                        // кладем логин и пароль в секреты
+                        secretStorage.saveLogin(state.email)
+                        secretStorage.savePassword(state.password)
+
+                        val authResponse = userApi.loginUser(
+                            AuthUserRequest(
+                                email = state.email,
+                                password = state.password
+                            )
+                        )
+                        if (authResponse.isSuccessful) {
+                            val authBody = authResponse.body()
+                            if (authBody != null) {
+                                secretStorage.saveTokens(
+                                    authBody.accessToken,
+                                    authBody.refreshToken
+                                )
+                                //парсим токен и кладем имя почту и роль в datastore
+                                val token = parseToken(authBody.accessToken)
+                                // сохраняем в дата стор
+                                userPrefsRepository.saveUserPrefs(
+                                    token.id, token.name.trim(),
+                                    token.email, token.role,
+                                    null
+                                )
+                            }
+                        } else {
+                            Log.e(
+                                "+++", "Ошибка авторизации  ${authResponse.code()}" +
+                                        " ${authResponse.message()}"
+                            )
+                            _errorsUuiState.update { it.copy(errorMessage = "Ошибка авторизации ${authResponse.message()}") }
+                        }
+                        _uiState.update { it.copy(isLoading = false, isSuccess = true) }
+                    } else {
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                            )
+                        }
+                    }
                 } catch (exception: Exception) {
                     Log.e("***", "Что случилось $exception")
                 }
             }
         } else {
-            _uiState.update { it.copy(errorMessage = "Пожалуйста, заполните все поля корректно") }
+            _errorsUuiState.update { it.copy(errorMessage = "Пожалуйста, заполните все поля корректно") }
             return
         }
     }

@@ -1,6 +1,13 @@
 package com.example.planetchildsapp.ui.screen.home
 
+import android.net.Uri
+import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -9,73 +16,112 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import coil.transform.CircleCropTransformation
+import com.example.planetchildsapp.R
+import com.example.planetchildsapp.ui.theme.Orange
 import com.example.planetchildsapp.ui.theme.PlanetChildAppTypography
-import com.example.planetchildsapp.view_model.ProfileViewModel
+import com.example.planetchildsapp.view_model.ProfileState
 
 @Composable
 fun AvatarTopBar(
-    onClick: () -> Unit, profileViewModel: ProfileViewModel,
+    profileState: ProfileState,
 ) {
-
-    val userInfo by profileViewModel.profileState.collectAsState()
-
     Row(
+        verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .fillMaxWidth()
-            .height(45.dp)
+            .height(100.dp)
     ) {
-        AvatarIcon(onClick, userInfo.avatarUri)
+        Avatar(
+            avatarPath = profileState.avatarPath,
+            onAvatarSelected = {},
+            clickable = false,
+            imageSize = 80.dp
+        )
 
         Spacer(Modifier.padding(horizontal = 5.dp))
 
         Column(
             verticalArrangement = Arrangement.Center,
-            modifier = Modifier.height(45.dp)
+            modifier = Modifier.height(100.dp)
         ) {
-            Text(userInfo.name, style = PlanetChildAppTypography.bodyMedium)
-            Text(userInfo.email, style = PlanetChildAppTypography.bodySmall)
+            Text(profileState.name, style = PlanetChildAppTypography.labelSmall)
+            Text(profileState.email, style = PlanetChildAppTypography.bodyMedium)
         }
     }
 
 }
 
 @Composable
-private fun AvatarIcon(onClick: () -> Unit, avatarId: Int) {
-    Surface(
+fun Avatar(
+    avatarPath: String?,
+    onAvatarSelected: (Uri) -> Unit,
+    imageSize: Dp = 120.dp,
+    clickable: Boolean = true
+) {
+
+    val context = LocalContext.current
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { onAvatarSelected(it) }
+    }
+
+    Box(
         modifier = Modifier
-            .size(45.dp),
-        shape = CircleShape,
-        color = Color.LightGray.copy(alpha = 0.3f)
+            .clickable(
+                enabled = clickable,
+                onClick = { launcher.launch("image/*") })
+            .border(4.dp, Orange, shape = CircleShape)
+            .clip(CircleShape),
     ) {
-        IconButton(
-            onClick = onClick,
+        AsyncImage(
+            model = ImageRequest.Builder(context)
+                .data(avatarPath ?: R.drawable.account_circle)
+                .crossfade(true)
+                .transformations(CircleCropTransformation())
+                .listener(
+                    onStart = { request ->
+                        Log.d("Coil", "Loading started, data=${request.data}")
+                    },
+                    onSuccess = { request, result ->
+                        Log.d(
+                            "Coil",
+                            "Loaded OK, data=${request.data}, source=${result.dataSource}"
+                        )
+                    },
+                    onError = { request, result ->
+                        Log.e("Coil", "Load FAILED, data=${request.data}", result.throwable)
+                    }
+                )
+                .build(),
+            placeholder = painterResource(R.drawable.avatar),
+            contentDescription = "Аватар пользователя",
+            error = painterResource(R.drawable.logout),
+            modifier = Modifier
+                .size(imageSize)
+                .clip(CircleShape),
+            contentScale = ContentScale.Crop,
         )
-        {
-            Icon(
-                painter = painterResource(avatarId),
-                contentDescription = "Профиль",
-                tint = Color.Unspecified
-            )
-        }
     }
 }
 
 @Composable
 @Preview(showBackground = true, showSystemUi = true)
 fun AvatarTopBarPreview() {
-    AvatarTopBar({}, viewModel())
+    AvatarTopBar(ProfileState(avatarPath = null))
 }

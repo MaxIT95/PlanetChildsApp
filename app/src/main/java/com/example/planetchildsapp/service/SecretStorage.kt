@@ -1,9 +1,14 @@
 ﻿package com.example.planetchildsapp.service
 
 import android.content.Context
+import android.util.Log
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import androidx.core.content.edit
+import com.example.planetchildsapp.client.model.request.AuthUserRequest
+import com.example.planetchildsapp.data.model.UserStorageInfo
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 
 class SecretStorage(context: Context) {
 
@@ -24,28 +29,7 @@ class SecretStorage(context: Context) {
     companion object {
         private const val KEY_ACCESS_TOKEN = "access_token"
         private const val KEY_REFRESH_TOKEN = "refresh_token"
-        private const val LOGIN = "login"
-        private const val PASSWORD = "password"
-    }
-
-    fun saveLogin(login: String) {
-        prefs.edit {
-            putString(LOGIN, login)
-        }
-    }
-
-    fun savePassword(password: String) {
-        prefs.edit {
-            putString(PASSWORD, password)
-        }
-    }
-
-    fun getLogin(): String? {
-        return prefs.getString(LOGIN, null)
-    }
-
-    fun getPassword(): String? {
-        return prefs.getString(PASSWORD, null)
+        private const val KEY_USERS = "users"
     }
 
     fun saveTokens(accessToken: String, refreshToken: String) {
@@ -54,6 +38,38 @@ class SecretStorage(context: Context) {
                 .putString(KEY_REFRESH_TOKEN, refreshToken)
         }
     }
+
+    fun saveUser(user: UserStorageInfo) {
+
+        prefs.edit {
+            try {
+                // получаем список юзеров
+                val users = getUsers().toMutableList()
+                users.add(user)
+                // переводим в json
+                val gson = Gson()
+                val usersAsString = gson.toJson(users)
+                putString(KEY_USERS, usersAsString)
+                Log.i("+++", "Информация для авторизации ${user.login} сохранена успешно")
+            } catch (ex: Exception) {
+                Log.i("+++", "Ошибка при сохранении данных пользователя: ${ex.message}")
+            }
+        }
+    }
+
+    fun getUsers(): List<UserStorageInfo> {
+
+        return try {
+            val gson = Gson()
+            val usersAsString = prefs.getString(KEY_USERS, "[]") ?: "[]"
+            val type = object : TypeToken<List<UserStorageInfo>>() {}.type
+            gson.fromJson(usersAsString, type) ?: emptyList()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emptyList()
+        }
+    }
+
 
     fun getAccessToken(): String? {
         return prefs.getString(KEY_ACCESS_TOKEN, null)

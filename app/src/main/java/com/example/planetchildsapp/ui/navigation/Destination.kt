@@ -12,10 +12,12 @@ sealed class Destination(val route: String) {
     data object Profile : Destination(ROUTE_PROFILE)
     data object Home : Destination(ROUTE_HOME)
     data object EditProfile : Destination(ROUTE_EDIT_PROFILE)
+    data object AddChild : Destination(ROUTE_ADD_CHILD)
 
     companion object {
         private const val ROUTE_SPLASH = "route_splash"
         private const val ROUTE_EDIT_PROFILE = "route_edit_profile"
+        private const val ROUTE_ADD_CHILD = "route_add_child"
         private const val ROUTE_GREETING = "route_greeting"
         private const val ROUTE_ENTER = "route_enter"
         private const val ROUTE_AUTHORIZATION = "route_authorization"

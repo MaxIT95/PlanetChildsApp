@@ -23,13 +23,17 @@ class RetrofitClient(private val tokenStorage: SecretStorage) {
             tokenStorage.getAccessToken()
         }
 
-        // 3. Создаем OkHttpClient и добавляем туда интерсепторы
+        // 3. Создаем TokenAuthenticator для автоматического обновления истёкшего токена
+        val tokenAuthenticator = TokenAuthenticator(tokenStorage)
+
+        // 4. Создаем OkHttpClient и добавляем интерсепторы и аутентификатор
         val client = OkHttpClient.Builder()
             .addInterceptor(logging)
             .addInterceptor(authInterceptor)
+            .authenticator(tokenAuthenticator)
             .build()
 
-        // 4. Настраиваем Retrofit с этим клиентом
+        // 5. Настраиваем Retrofit с этим клиентом
         return Retrofit.Builder()
             .baseUrl(DEFAULT_URL)
             .client(client)

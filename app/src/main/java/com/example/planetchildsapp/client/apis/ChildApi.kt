@@ -3,6 +3,7 @@ package com.example.planetchildsapp.client.apis
 import com.example.planetchildsapp.client.model.request.ChildRequest
 import com.example.planetchildsapp.client.model.response.ChildResponse
 import com.example.planetchildsapp.client.model.response.PagedChildResponse
+import okhttp3.MultipartBody
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -12,9 +13,11 @@ interface ChildApi {
      * Add a new child
      * Creates a new child for the currently authenticated parent
      */
+    @Multipart
     @POST("/api/child/add-child")
     suspend fun addChild(
-        @Body request: ChildRequest
+        @Part child: MultipartBody.Part,
+        @Part picture: MultipartBody.Part
     ): Response<ChildResponse>
 
     /**

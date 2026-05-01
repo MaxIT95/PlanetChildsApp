@@ -11,10 +11,11 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 data class UserPrefsData(
+    val id: String? = null,
     val name: String? = null,
     val email: String? = null,
     val role: String? = null,
-    val avatarUrl: String? = null
+    val avatarPath: String? = null
 )
 
 @Singleton
@@ -23,20 +24,22 @@ class UserPrefsRepository @Inject constructor(
 ) {
 
     companion object {
+        private val ID_KEY = stringPreferencesKey("id")
         private val NAME_KEY = stringPreferencesKey("name")
         private val EMAIL_KEY = stringPreferencesKey("email")
         private val ROLE_KEY = stringPreferencesKey("role")
-        private val AVATAR_URL_KEY = stringPreferencesKey("avatar_url")
+        private val AVATAR_PATH_KEY = stringPreferencesKey("avatar_path")
     }
 
     // Flow для реактивного получения всех данных сразу
     val userPrefsFlow: Flow<UserPrefsData> = dataStore.data
         .map { preferences ->
             UserPrefsData(
+                id = preferences[ID_KEY],
                 name = preferences[NAME_KEY],
                 email = preferences[EMAIL_KEY],
                 role = preferences[ROLE_KEY],
-                avatarUrl = preferences[AVATAR_URL_KEY]
+                avatarPath = preferences[AVATAR_PATH_KEY]
             )
         }
 
@@ -56,9 +59,14 @@ class UserPrefsRepository @Inject constructor(
             preferences[ROLE_KEY]
         }
 
-    val avatarUrlFlow: Flow<String?> = dataStore.data
+    val idFlow: Flow<String?> = dataStore.data
         .map { preferences ->
-            preferences[AVATAR_URL_KEY]
+            preferences[ID_KEY]
+        }
+
+    val avatarPathFlow: Flow<String?> = dataStore.data
+        .map { preferences ->
+            preferences[AVATAR_PATH_KEY]
         }
 
     // Метод для единовременного получения данных (не Flow)
@@ -67,13 +75,20 @@ class UserPrefsRepository @Inject constructor(
     }
 
     // Сохранить все данные одной транзакцией
-    suspend fun saveUserPrefs(name: String, email: String, role: String, avatarUrl: String?) {
+    suspend fun saveUserPrefs(
+        id: String,
+        name: String,
+        email: String,
+        role: String,
+        avatarUri: String?
+    ) {
         dataStore.edit { preferences ->
+            preferences[ID_KEY] = id
             preferences[NAME_KEY] = name
             preferences[EMAIL_KEY] = email
             preferences[ROLE_KEY] = role
-            if (avatarUrl != null) {
-                preferences[AVATAR_URL_KEY] = avatarUrl
+            if (avatarUri != null) {
+                preferences[AVATAR_PATH_KEY] = avatarUri
             }
         }
     }
@@ -97,9 +112,22 @@ class UserPrefsRepository @Inject constructor(
         }
     }
 
-    suspend fun saveAvatarUrl(url: String) {
+    suspend fun saveId(id: String) {
         dataStore.edit { preferences ->
-            preferences[AVATAR_URL_KEY] = url
+            preferences[ID_KEY] = id
+        }
+    }
+
+    suspend fun saveAvatarPath(filePath: String) {
+        dataStore.edit { preferences ->
+            preferences[AVATAR_PATH_KEY] = filePath
+        }
+    }
+
+    suspend fun saveChildAvatar(fileName: String, avatarPath: String) {
+        dataStore.edit { preferences ->
+            val childAvatarKey = stringPreferencesKey("avatar_path_$fileName")
+            preferences[childAvatarKey] = avatarPath
         }
     }
 
@@ -109,7 +137,7 @@ class UserPrefsRepository @Inject constructor(
             preferences.remove(NAME_KEY)
             preferences.remove(EMAIL_KEY)
             preferences.remove(ROLE_KEY)
-            preferences.remove(AVATAR_URL_KEY)
+            preferences.remove(AVATAR_PATH_KEY)
         }
     }
 }

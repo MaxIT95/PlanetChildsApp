@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.planetchildsapp.client.apis.UserApi
 import com.example.planetchildsapp.client.model.request.AuthUserRequest
 import com.example.planetchildsapp.client.model.request.RefreshTokenRequest
+import com.example.planetchildsapp.data.model.UserStorageInfo
 import com.example.planetchildsapp.data.model.parseToken
 import com.example.planetchildsapp.data.repository.UserPrefsRepository
 import com.example.planetchildsapp.service.SecretStorage
@@ -38,21 +39,22 @@ class AuthorizationViewModel @Inject constructor(
     private val userPrefsRepository: UserPrefsRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(initAuthState())
+    private val _usersInfoState: MutableStateFlow<List<UserStorageInfo>> =
+        MutableStateFlow(emptyList())
+    private val usersInfoState: StateFlow<List<UserStorageInfo>> = _usersInfoState.asStateFlow()
+
+    private val _uiState = MutableStateFlow(AuthorizationState())
     private val _errorsUuiState = MutableStateFlow(AuthorizationErrors())
     val uiState: StateFlow<AuthorizationState> = _uiState.asStateFlow()
     val errorsUiState: StateFlow<AuthorizationErrors> = _errorsUuiState.asStateFlow()
     private val _resultAuthorize = MutableStateFlow(false)
     val resultAuth: StateFlow<Boolean> = _resultAuthorize
 
-    private fun initAuthState(): AuthorizationState {
-        val login = secretStorage.getLogin()
-        val password = secretStorage.getPassword()
-
-        if (login != null && password != null) {
-            return AuthorizationState(login = login, password = password)
+    init {
+        //загружаем юзеров
+        viewModelScope.launch {
+            _usersInfoState.value = secretStorage.getUsers();
         }
-        return AuthorizationState()
     }
 
     /**
@@ -67,6 +69,7 @@ class AuthorizationViewModel @Inject constructor(
             token.isNotEmpty()
         ) {
             Log.i("+++", "Ура, токен есть, но надо проверить его актуальность")
+            Log.i("+++", token)
             viewModelScope.async {
                 val currentUser = userApi.getCurrentUser()
 
@@ -76,7 +79,7 @@ class AuthorizationViewModel @Inject constructor(
                 } else {
                     Log.e("+++", "Токен просрочен...")
                     val refreshToken = secretStorage.getRefreshToken()
-
+                    Log.i("+++", "refresh token: $refreshToken")
                     if (refreshToken != null) {
                         val refreshResponse =
                             userApi.refreshToken(
@@ -85,19 +88,18 @@ class AuthorizationViewModel @Inject constructor(
                         if (refreshResponse.isSuccessful) {
                             Log.i("+++", "Токен успешно обновлен!")
 
-                            //todo парсим токен и кладем имя почту и роль в datastore
                             val body = refreshResponse.body() ?: throw RuntimeException()
 
                             val token = parseToken(body.accessToken)
                             // сохраняем в дата стор
                             userPrefsRepository.saveUserPrefs(
-                                token.name, token.email,
-                                token.role, null
+                                token.id, token.name.trim(),
+                                token.email, token.role, null
                             )
                             _resultAuthorize.value = true
                         } else {
                             Log.e("+++", "refreshToken не сработал...$refreshToken")
-                            Log.e("+++", "${refreshResponse.code()}")
+                            Log.e("+++", "${refreshResponse.errorBody()?.string()}")
                             _resultAuthorize.value = false
                         }
                     } else {
@@ -151,18 +153,25 @@ class AuthorizationViewModel @Inject constructor(
                     val body = response.body()
                     if (body != null) {
                         secretStorage.saveTokens(body.accessToken, body.refreshToken)
-                        secretStorage.saveLogin(state.login)
-                        secretStorage.savePassword(state.password)
-
-                        //todo парсим токен и кладем имя почту и роль в datastore
+                        // парсим токен и кладем имя почту и роль в datastore
                         val token = parseToken(body.accessToken)
                         // сохраняем в дата стор
                         userPrefsRepository.saveUserPrefs(
-                            token.name, token.email,
+                            token.id,
+                            token.name.trim(), token.email,
                             token.role, null
                         )
-
                         _uiState.update { it.copy(isLoading = false, isSuccess = true) }
+                        // ключеовй момент - сохраняем объект юзера в
+                        // секретное хранилище в виде списка юхзеров
+                        // для последующего выбора из выпад. меню при авторизации
+                        secretStorage.saveUser(
+                            UserStorageInfo(
+                                token.id,
+                                state.login,
+                                state.password
+                            )
+                        )
                     } else {
                         _uiState.update {
                             it.copy(
@@ -175,6 +184,7 @@ class AuthorizationViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isLoading = false,
+                            errorMessage = "Пользователь не зарегистрирован"
                         )
                     }
                 }
@@ -186,9 +196,5 @@ class AuthorizationViewModel @Inject constructor(
                 }
             }
         }
-    }
-
-    private fun decodeTokenAndGetUserInfo(token: String) {
-
     }
 }

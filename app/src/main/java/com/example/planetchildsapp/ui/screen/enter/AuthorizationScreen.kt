@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Person
@@ -24,12 +23,12 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -41,26 +40,27 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.rememberNavController
 import com.example.planetchildsapp.R
+import com.example.planetchildsapp.data.model.UserStorageInfo
 import com.example.planetchildsapp.ui.navigation.Destination
 import com.example.planetchildsapp.ui.theme.Orange
 import com.example.planetchildsapp.ui.theme.PlanetChildAppTypography
-import com.example.planetchildsapp.ui.theme.PlanetChildsAppTheme
 import com.example.planetchildsapp.ui.theme.SurfaceVariantColor
 import com.example.planetchildsapp.view_model.AuthorizationState
 import com.example.planetchildsapp.view_model.AuthorizationViewModel
 import kotlinx.coroutines.delay
+
 
 @SuppressLint("ResourceAsColor")
 @Composable
@@ -76,29 +76,57 @@ fun AuthorizationScreen(
             .padding(top = 250.dp, bottom = 16.dp)
             .fillMaxWidth()
     ) {
-        AuthHeader()
-        Spacer(Modifier.padding(20.dp))
-        CommonTextHeader("Логин", 30)
+    }
 
-        val state by authViewModel.uiState.collectAsState()
-        val errorState by authViewModel.errorsUiState.collectAsState()
+    val state by authViewModel.uiState.collectAsState()
+    val errorState by authViewModel.errorsUiState.collectAsState()
 
-        LoginField(state.login, {
+    AuthHeader("Войти", 100)
+    Spacer(Modifier.padding(20.dp))
+
+    CommonTextHeader("Логин", 30)
+
+    EnterTextField(
+        state.login, {
             authViewModel.onLoginChange(it)
-        }, errorState.isLoginValid)
+        }, errorState.isLoginValid,
+        "Введите логин/эл. почту",
+        Icons.Default.Person
+    )
 
-        Spacer(Modifier.padding(15.dp))
-        CommonTextHeader("Пароль", 30)
+    Spacer(Modifier.padding(15.dp))
+    CommonTextHeader("Пароль", 30)
 
-        PasswordField(state.password, {
+    PasswordField(state.password, {
+        authViewModel.onPasswordChange(it)
+    }, errorState.isPasswordValid, "Введите пароль")
+    Spacer(Modifier.padding(15.dp))
 
-            authViewModel.onPasswordChange(it)
-        }, errorState.isPasswordValid)
-        Spacer(Modifier.padding(15.dp))
+    ForgotPasswordButton()
 
-        ForgotPasswordButton()
+    LoginButton(authViewModel, state, navHost)
+}
+//}
 
-        LoginButton(authViewModel, state, navHost)
+@Composable
+fun UsersDropDown(authViewModel: AuthorizationViewModel) {
+
+    val users: List<UserStorageInfo> = authViewModel.
+    // Выпадающий список пользователей
+    DropdownMenu(
+        expanded = false,
+        onDismissRequest = { /* TODO */ }
+    ) {
+        users.forEach { user ->
+            DropdownMenuItem(
+                text = { Text(user.login) },
+                onClick = {
+                    viewModel.selectUser(user)
+                    username = user.username
+                    password = user.password
+                }
+            )
+        }
     }
 }
 
@@ -150,11 +178,23 @@ fun Background(paddingValues: PaddingValues) {
 }
 
 @Composable
-fun AuthHeader() {
-    Row(modifier = Modifier.fillMaxWidth()) {
+fun AuthHeader(text: String, underline: Int) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 10.dp)
+    ) {
         Column {
-            CommonTextButton("Войти")
-            UnderLinerForText(100)
+            CommonTextButton(text)
+            Image(
+                contentDescription = "линия",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .width(underline.dp)
+                    .height(2.dp)
+                    .padding(start = 21.dp),
+                painter = painterResource(R.drawable.login_line),
+            )
         }
     }
 }
@@ -165,22 +205,9 @@ fun CommonTextButton(
 ) {
     Text(
         text = text,
-        style = PlanetChildAppTypography.titleMedium,
+        style = PlanetChildAppTypography.labelLarge,
         modifier = Modifier
-            .padding(start = 30.dp)
-    )
-}
-
-@Composable
-fun UnderLinerForText(length: Int) {
-    Image(
-        contentDescription = "линия",
-        contentScale = ContentScale.Crop,
-        modifier = Modifier
-            .width(length.dp)
-            .height(4.dp)
-            .padding(start = 30.dp),
-        painter = painterResource(R.drawable.login_line),
+            .padding(start = 20.dp)
     )
 }
 
@@ -189,54 +216,69 @@ fun CommonTextHeader(text: String, startPadding: Int) {
     Text(
         text = text,
         modifier = Modifier.padding(start = startPadding.dp),
-        style = PlanetChildAppTypography.titleSmall
+        style = PlanetChildAppTypography.labelSmall
     )
 }
 
 @Composable
-fun LoginField(text: String, onValueChange: (String) -> Unit, isValueValid: Boolean) {
-    OutlinedTextField(
+fun EnterTextField(
+    text: String, onValueChange: (String) -> Unit,
+    isValueValid: Boolean, placeholder: String,
+    imageVector: ImageVector,
+    horizontalPadding: Dp = 20.dp
+) {
+    TextField(
         onValueChange = onValueChange,
         value = text,
         singleLine = true,
-        label = {
-            Text("Введите логин/эл. почту")
-        },
+        placeholder = { Text(placeholder, style = PlanetChildAppTypography.bodyMedium) },
         leadingIcon = {
             Icon(
-                imageVector = Icons.Default.Person,
+                tint = if (!isValueValid) Color.Red else Color.DarkGray,
+                imageVector = imageVector,
                 contentDescription = "Icon for login field"
             )
         },
-        shape = RoundedCornerShape(16.dp),
         colors = TextFieldDefaults.colors(
             errorContainerColor = Color.White,
-            unfocusedIndicatorColor = Color.LightGray,
+            unfocusedIndicatorColor = Color.Black,
+            cursorColor = SurfaceVariantColor,
             focusedIndicatorColor = SurfaceVariantColor,
-            unfocusedContainerColor = Color.White,
+            unfocusedContainerColor = Color.Transparent,
             focusedLabelColor = SurfaceVariantColor,
-            focusedContainerColor = Color.White
+            focusedContainerColor = Color.Transparent
         ),
         isError = !isValueValid,
         modifier = Modifier
-            .padding(start = 30.dp, top = 10.dp, end = 30.dp)
             .fillMaxWidth()
+            .padding(horizontal = horizontalPadding)
     )
 }
 
 @Composable
-fun PasswordField(text: String, onValueChange: (String) -> Unit, isPasswordValid: Boolean) {
+fun PasswordField(
+    text: String, onValueChange: (String) -> Unit,
+    isPasswordValid: Boolean,
+    placeholder: String,
+    horizontalPadding: Dp = 20.dp
+) {
 
     var passwordVisible by remember { mutableStateOf(false) }
 
-    OutlinedTextField(
+    TextField(
         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
         onValueChange = onValueChange,
         value = text,
-        singleLine = true, label = {
-            Text("Введите пароль")
-        }, leadingIcon = {
+        singleLine = true,
+        placeholder = {
+            Text(
+                placeholder,
+                style = PlanetChildAppTypography.bodyMedium
+            )
+        },
+        leadingIcon = {
             Icon(
+                tint = if (!isPasswordValid) Color.Red else Color.DarkGray,
                 imageVector = Icons.Default.Key,
                 contentDescription = "Icon for login field"
             )
@@ -249,30 +291,34 @@ fun PasswordField(text: String, onValueChange: (String) -> Unit, isPasswordValid
 
             IconButton(onClick = { passwordVisible = !passwordVisible }) {
                 Icon(
-                    tint = MaterialTheme.colorScheme.secondary,
+                    tint = Color.Black,
                     imageVector = image,
                     contentDescription = if (passwordVisible) "Hide password" else "Show password"
                 )
             }
         },
-        shape = RoundedCornerShape(16.dp),
         colors = TextFieldDefaults.colors(
             errorContainerColor = Color.White,
-            unfocusedIndicatorColor = Color.LightGray,
+            unfocusedIndicatorColor = Color.Black,
+            cursorColor = SurfaceVariantColor,
             focusedIndicatorColor = SurfaceVariantColor,
-            unfocusedContainerColor = Color.White,
+            unfocusedContainerColor = Color.Transparent,
             focusedLabelColor = SurfaceVariantColor,
-            focusedContainerColor = Color.White
+            focusedContainerColor = Color.Transparent
         ),
         isError = !isPasswordValid,
         modifier = Modifier
-            .padding(start = 30.dp, top = 10.dp, end = 30.dp)
+            .padding(horizontal = horizontalPadding)
             .fillMaxWidth()
     )
 }
 
 @Composable
-fun LoginButton(viewModel: AuthorizationViewModel, state: AuthorizationState, navHostController: NavHostController) {
+fun LoginButton(
+    viewModel: AuthorizationViewModel,
+    state: AuthorizationState,
+    navHostController: NavHostController
+) {
     val context = LocalContext.current
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -297,12 +343,16 @@ fun LoginButton(viewModel: AuthorizationViewModel, state: AuthorizationState, na
             }
         }
     }
+
+    if (state.errorMessage != null) {
+        Toast.makeText(context, "Пользователь не найден", Toast.LENGTH_SHORT).show()
+    }
+
     LaunchedEffect(state.isSuccess) {
         if (state.isSuccess) {
             Toast.makeText(context, "Авторизация прошла успешно", Toast.LENGTH_SHORT).show()
             navHostController.navigate(Destination.Home.route) {
                 popUpTo(Destination.Authorization.route) { inclusive = true }
-                launchSingleTop = true
             }
             //переход
             delay(400)
@@ -311,18 +361,15 @@ fun LoginButton(viewModel: AuthorizationViewModel, state: AuthorizationState, na
     }
 }
 
-
 @Composable
 @Preview(showBackground = true, showSystemUi = true)
-fun AuthorizationScreenPreview() {
-    val navController = rememberNavController()
-
-    PlanetChildsAppTheme {
-        Scaffold { paddingValues ->
-            AuthorizationScreen(
-                paddingValues, navController,
-                viewModel()
-            )
-        }
+fun LoginFieldPreview() {
+    Column {
+        Spacer(Modifier.padding(vertical = 100.dp))
+        EnterTextField(
+            "name", {}, true,
+            "placeholder", Icons.Default.Person
+        )
     }
+
 }

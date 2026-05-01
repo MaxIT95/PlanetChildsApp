@@ -6,8 +6,8 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class PagedChildResponse(
     @SerialName("content")
-    val content: List<ChildResponse>,
-    
-    @SerialName("pageInfo")
-    val pageInfo: PageInfo
+    val content: List<ChildResponse> = emptyList(),
+
+    @SerialName("page")
+    val page: PageInfo? = null
 )

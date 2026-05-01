@@ -1,5 +1,6 @@
 ﻿package com.example.planetchildsapp.configuration
 
+import android.util.Log
 import okhttp3.Interceptor
 import okhttp3.Response
 

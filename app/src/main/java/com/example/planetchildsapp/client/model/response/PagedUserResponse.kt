@@ -6,8 +6,8 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class PagedUserResponse(
     @SerialName("content")
-    val content: List<SearchUserResponse>,
-    
-    @SerialName("pageInfo")
-    val pageInfo: PageInfo
+    val content: List<SearchUserResponse> = emptyList(),
+
+    @SerialName("page")
+    val page: PageInfo? = null
 )

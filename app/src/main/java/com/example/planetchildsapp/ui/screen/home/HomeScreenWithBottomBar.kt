@@ -1,6 +1,5 @@
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,16 +25,21 @@ import androidx.navigation.compose.rememberNavController
 import com.example.planetchildsapp.R
 import com.example.planetchildsapp.ui.navigation.BottomNavigation
 import com.example.planetchildsapp.ui.navigation.Destination
-import com.example.planetchildsapp.ui.screen.home.EditProfileScreen
-import com.example.planetchildsapp.ui.screen.home.EventScreen
-import com.example.planetchildsapp.ui.screen.home.ProfileScreen
+import com.example.planetchildsapp.ui.screen.profile.EditProfileScreen
+import com.example.planetchildsapp.ui.screen.event.EventScreen
+import com.example.planetchildsapp.ui.screen.profile.ProfileScreen
 import com.example.planetchildsapp.ui.screen.home.ScheduleScreen
+import com.example.planetchildsapp.ui.screen.profile.AddChildScreen
+import com.example.planetchildsapp.view_model.ChildViewModel
+import com.example.planetchildsapp.view_model.ProfileViewModel
 
 @Composable
 fun HomeScreenWithBottomBar(oldNavHost: NavHostController) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+    val profileViewModel: ProfileViewModel = hiltViewModel()
+    val childViewModel: ChildViewModel = hiltViewModel()
 
     Box(
         modifier = Modifier
@@ -81,20 +85,31 @@ fun HomeScreenWithBottomBar(oldNavHost: NavHostController) {
                 composable(Destination.Schedule.route) {
                     ScheduleScreen(
                         navController,
-                        hiltViewModel()
+                        profileViewModel
                     )
                 }
 
                 composable(Destination.Events.route) {
-                    EventScreen(navController)
+                    EventScreen(navController, profileViewModel)
                 }
 
                 composable(Destination.Profile.route) {
-                    ProfileScreen(navController, hiltViewModel())
+                    ProfileScreen(
+                        navController,
+                        profileViewModel,
+                        childViewModel
+                    )
                 }
 
                 composable(route = Destination.EditProfile.route) {
-                    EditProfileScreen(navController, oldNavHost, hiltViewModel())
+                    EditProfileScreen(
+                        navController, oldNavHost,
+                        profileViewModel
+                    )
+                }
+
+                composable(route = Destination.AddChild.route) {
+                    AddChildScreen(navController, childViewModel)
                 }
             }
         }

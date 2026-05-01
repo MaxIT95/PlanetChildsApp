@@ -7,13 +7,14 @@ import kotlinx.serialization.Serializable
 data class CoachChildrenResponse(
     @SerialName("id")
     val id: Long,
-    
+
+    @SerialName("coach")
+    val coach: SearchUserResponse? = null,
+
     @SerialName("child")
-    val child: ChildResponse,
-    
-    @SerialName("coachId")
-    val coachId: Long,
-    
-    @SerialName("linkedAt")
-    val linkedAt: String? = null // format: date-time
+    val child: ChildResponse? = null,
+
+    // format: date-time
+    @SerialName("createdAt")
+    val createdAt: String? = null
 )

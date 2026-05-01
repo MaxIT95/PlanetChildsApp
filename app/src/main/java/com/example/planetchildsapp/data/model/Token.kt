@@ -8,6 +8,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Token(
+    val id: String,
     val name: String,
     val email: String,
     val role: String
@@ -16,20 +17,26 @@ data class Token(
 fun parseToken(jsonToken: String): Token {
     Log.i("+++", "Начинаем парсить токен")
     val decodedToken = parseJwt(jsonToken)
+    val id = decodedToken.getClaim("user_id").asString()
     val name = decodedToken.getClaim("name").asString()
     val email = decodedToken.getClaim("email").asString()
     val role = decodedToken.getClaim("role").asString()
 
+    Log.i("+++", "user_id=$id, name=$name, email=$email, role=$role")
+
     if (name != null &&
         email != null &&
-        role != null
+        role != null &&
+        id != null
     ) {
         return Token(
+            id = id,
             name = name,
             email = email,
             role = role
         )
     } else {
+
         throw RuntimeException()
     }
 }

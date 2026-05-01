@@ -7,7 +7,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -16,7 +15,6 @@ import com.example.planetchildsapp.ui.screen.enter.EnterScreen
 import com.example.planetchildsapp.ui.screen.enter.GreetingScreen
 import com.example.planetchildsapp.ui.screen.enter.RegistrationScreen
 import com.example.planetchildsapp.ui.screen.enter.SplashScreen
-import com.example.planetchildsapp.ui.screen.home.EditProfileScreen
 import com.example.planetchildsapp.view_model.AuthorizationViewModel
 import com.example.planetchildsapp.view_model.RegistrationViewModel
 import kotlinx.coroutines.delay
@@ -24,7 +22,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun AppNavHost(
     navHostController: NavHostController,
-    paddingValues: PaddingValues,
+    paddingValues: PaddingValues
 ) {
     NavHost(
         navController = navHostController,
@@ -76,7 +74,7 @@ fun AppNavHost(
         }
 
         composable(route = Destination.Registration.route) { backStackEntry ->
-            val registrationViewModel: RegistrationViewModel = viewModel(backStackEntry)
+            val registrationViewModel: RegistrationViewModel = hiltViewModel(backStackEntry)
 
             RegistrationScreen(
                 paddingValues, navHostController, registrationViewModel
@@ -84,7 +82,6 @@ fun AppNavHost(
         }
 
         composable(route = Destination.Home.route) {
-
             HomeScreenWithBottomBar(navHostController)
         }
     }

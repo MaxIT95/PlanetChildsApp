@@ -4,14 +4,36 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
 import java.io.File
 import java.io.FileOutputStream
 
 /**
  * Extension функции для работы с изображениями
  */
+
+/**
+ * Сохраняет изображение из уже скопированного File в internal storage.
+ * Используется когда URI уже был прочитан ранее (например, picker_get_content URI).
+ * @return абсолютный путь к сохранённому файлу или null при ошибке
+ */
+fun Context.saveImageToInternalStorage(sourceFile: File): String? {
+    return try {
+        deleteOldAvatar()
+        val fileName = "avatar_${System.currentTimeMillis()}.jpg"
+        val destFile = File(filesDir, fileName)
+        FileOutputStream(destFile).use { output ->
+            val bitmap = BitmapFactory.decodeFile(sourceFile.absolutePath) ?: return null
+            val resizedBitmap = resizeBitmap(bitmap, maxWidth = 512, maxHeight = 512)
+            resizedBitmap.compress(Bitmap.CompressFormat.JPEG, 85, output)
+            resizedBitmap.recycle()
+            bitmap.recycle()
+        }
+        destFile.absolutePath
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    }
+}
 
 /**
  * Сохраняет изображение из Uri в internal storage
@@ -40,24 +62,6 @@ fun Context.saveImageToInternalStorage(uri: Uri): String? {
         }
         
         file.absolutePath
-    } catch (e: Exception) {
-        e.printStackTrace()
-        null
-    }
-}
-
-/**
- * Загружает изображение из файла и конвертирует в ImageBitmap для Compose
- */
-fun loadImageBitmapFromPath(path: String?): ImageBitmap? {
-    if (path == null) return null
-    
-    return try {
-        val file = File(path)
-        if (!file.exists()) return null
-        
-        val bitmap = BitmapFactory.decodeFile(path)
-        bitmap?.asImageBitmap()
     } catch (e: Exception) {
         e.printStackTrace()
         null

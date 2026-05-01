@@ -7,16 +7,10 @@ import kotlinx.serialization.Serializable
 data class ProfileResponse(
     @SerialName("id")
     val id: Long,
-    
-    @SerialName("username")
-    val username: String,
-    
-    @SerialName("email")
-    val email: String,
-    
-    @SerialName("role")
-    val role: String,
-    
-    @SerialName("profile")
-    val profile: UserProfileResponse? = null
+
+    @SerialName("description")
+    val description: String? = null,
+
+    @SerialName("contents")
+    val contents: List<ProfileContentResponse> = emptyList()
 )

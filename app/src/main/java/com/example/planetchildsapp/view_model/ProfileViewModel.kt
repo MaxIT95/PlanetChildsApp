@@ -5,26 +5,32 @@ import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.planetchildsapp.R
 import com.example.planetchildsapp.client.apis.UserApi
+import com.example.planetchildsapp.client.model.request.UserProfileRequest
 import com.example.planetchildsapp.data.repository.UserPrefsRepository
 import com.example.planetchildsapp.service.SecretStorage
-import com.example.planetchildsapp.utils.saveImageToInternalStorage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.File
 import javax.inject.Inject
 
 data class ProfileState(
-    val avatarUri: Int = R.drawable.account_circle,
-    val avatarPath: String? = null, // Путь к файлу аватара в internal storage
+    val id: String = "",
     val name: String = "",
     val email: String = "",
+    val password: String = "",
     val isLoading: Boolean = false,
-    val error: String? = null
+    val isSuccess: Boolean = false,
+    val error: String? = null,
+    val avatarPath: String? = null,
+    val isNameValid: Boolean = true,
+    val isEmailValid: Boolean = true,
+    val isPasswordValid: Boolean = true
 )
 
 @HiltViewModel
@@ -39,8 +45,64 @@ class ProfileViewModel @Inject constructor(
     val profileState: StateFlow<ProfileState> = _profileState.asStateFlow()
 
     init {
+        observeAvatar()
         loadUserInfo()
-        loadAvatar()
+    }
+
+    fun clearSuccessStatus() {
+        _profileState.value = _profileState.value.copy(isSuccess = false)
+    }
+
+    /**
+     * Реактивная подписка на аватар из DataStore.
+     * Обновляет UI сразу при любом изменении — не нужно ждать одноразового getUserPrefs().
+     */
+    private fun observeAvatar() {
+        viewModelScope.launch {
+            userPrefsRepository.avatarPathFlow.collect { avatarPath ->
+                _profileState.update { it.copy(avatarPath = avatarPath) }
+            }
+        }
+    }
+
+    /**
+     * Метод для сохранения изменений
+     */
+    fun onSaveChanges() {
+        if (_profileState.value.isEmailValid &&
+            _profileState.value.isPasswordValid &&
+            _profileState.value.isNameValid
+        ) {
+            viewModelScope.launch {
+                val userRequest = UserProfileRequest(
+                    email = _profileState.value.email,
+                    name = _profileState.value.name,
+                )
+                //вызываем метод api backend для обновления
+                val updateResponse =
+                    userApi.updateUser(_profileState.value.id.toLong(), userRequest)
+
+                val responseBody = updateResponse.body()
+
+                if (updateResponse.raw().isSuccessful &&
+                    responseBody != null
+                ) {
+                    Log.i("+++", "Запрос успешно выполнен")
+                    //уведомление что все ок
+                    _profileState.value = _profileState.value.copy(
+                        name = responseBody.name ?: "",
+                        email = responseBody.email ?: "",
+                        isLoading = false,
+                        isSuccess = true
+                    )
+                    // обновляем data store, secret
+                    userPrefsRepository.saveEmail(responseBody.email ?: "")
+                    userPrefsRepository.saveName(responseBody.name ?: "")
+                    Log.i("+++", "userPrefsRepository updated complete")
+                    secretStorage.saveLogin(responseBody.email ?: "")
+                }
+            }
+        }
     }
 
     /**
@@ -56,19 +118,23 @@ class ProfileViewModel @Inject constructor(
             try {
                 // Шаг 1: Проверяем данные в DataStore
                 val cachedData = userPrefsRepository.getUserPrefs()
+                val password = secretStorage.getPassword()
 
-                if (cachedData.name != null && cachedData.email != null) {
+                if (cachedData.id != null &&
+                    cachedData.name != null &&
+                    cachedData.email != null &&
+                    password != null
+                ) {
                     // Данные уже есть в кэше
-                    Log.i("ProfileViewModel", "Загружены данные из DataStore: $cachedData")
+                    // avatarUri не трогаем — им управляет observeAvatar()
+                    Log.i("+++", "Загружены данные из DataStore: $cachedData")
                     _profileState.value = _profileState.value.copy(
+                        id = cachedData.id,
+                        password = password,
                         name = cachedData.name,
                         email = cachedData.email,
-                        isLoading = false
+                        isLoading = false,
                     )
-//                } else {
-////                    // Шаг 2: Данных нет - загружаем с сервера
-////                    Log.i("ProfileViewModel", "Данных в DataStore нет, загружаем с сервера...")
-////                    fetchUserFromApi()
                 }
             } catch (e: Exception) {
                 Log.e("ProfileViewModel", "Ошибка загрузки данных", e)
@@ -80,108 +146,47 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Загрузка аватара из DataStore
-     */
-    private fun loadAvatar() {
-        viewModelScope.launch {
-            userPrefsRepository.avatarUrlFlow.collect { avatarPath ->
-                _profileState.value = _profileState.value.copy(avatarPath = avatarPath)
-            }
+    fun onPasswordChange(newPassword: String) {
+        _profileState.update {
+            it.copy(
+                password = newPassword,
+                isPasswordValid = newPassword.isNotEmpty() && newPassword.length > 7
+            )
         }
     }
 
-    /**
-     * Обработка выбранного аватара из галереи
-     */
-    fun onAvatarSelected(uri: Uri) {
-        viewModelScope.launch {
-            try {
-                // Сохраняем изображение в internal storage
-                val savedPath = context.saveImageToInternalStorage(uri)
-
-                if (savedPath != null) {
-                    // Сохраняем путь в DataStore
-                    userPrefsRepository.saveAvatarUrl(savedPath)
-
-                    // Обновляем UI
-                    _profileState.value = _profileState.value.copy(avatarPath = savedPath)
-
-                    Log.i("ProfileViewModel", "Аватар сохранен: $savedPath")
-                } else {
-                    Log.e("ProfileViewModel", "Ошибка сохранения аватара")
-                    _profileState.value = _profileState.value.copy(
-                        error = "Не удалось сохранить изображение"
-                    )
-                }
-            } catch (e: Exception) {
-                Log.e("ProfileViewModel", "Ошибка обработки аватара", e)
-                _profileState.value = _profileState.value.copy(
-                    error = "Ошибка: ${e.message}"
-                )
-            }
+    fun onNameChange(name: String) {
+        _profileState.update {
+            it.copy(name = name, isNameValid = name.isNotEmpty())
         }
     }
 
-    /**
-     * Загрузка данных пользователя с сервера
-     */
-//    private suspend fun fetchUserFromApi() {
-//        try {
-//            val response = userApi.getCurrentUser()
-//
-//            if (response.isSuccessful) {
-//                val userInfo = response.body()
-//
-//                if (userInfo != null && userInfo.name != null && userInfo.email != null) {
-//                    Log.i("ProfileViewModel", "Получены данные с сервера: $userInfo")
-//
-//                    // Сохраняем в DataStore для будущих запусков
-//                    userPrefsRepository.saveUserPrefs(
-//                        name = userInfo.name,
-//                        email = userInfo.email,
-//                        role = userInfo.role,
-//                        avatarUrl = null // TODO: добавить поддержку avatar URL из API
-//                    )
-//
-//                    // Обновляем UI
-//                    _profileState.value = _profileState.value.copy(
-//                        name = userInfo.name,
-//                        email = userInfo.email,
-//                        isLoading = false
-//                    )
-//                } else {
-//                    Log.w("ProfileViewModel", "Получены некорректные данные с сервера")
-//                    _profileState.value = _profileState.value.copy(
-//                        isLoading = false,
-//                        error = "Получены неполные данные с сервера"
-//                    )
-//                }
-//            } else {
-//                Log.e("ProfileViewModel", "Ошибка HTTP: ${response.code()}")
-//                _profileState.value = _profileState.value.copy(
-//                    isLoading = false,
-//                    error = "Ошибка сервера: ${response.code()}"
-//                )
-//            }
-//        } catch (e: Exception) {
-//            Log.e("ProfileViewModel", "Ошибка сетевого запроса", e)
-//            _profileState.value = _profileState.value.copy(
-//                isLoading = false,
-//                error = "Ошибка сети: ${e.message}"
-//            )
-//        }
-//    }
+    fun onEmailChange(email: String) {
+        _profileState.update {
+            it.copy(email = email, isEmailValid = email.isNotEmpty())
+        }
+    }
 
-    /**
-     * Принудительная перезагрузка данных с сервера
-     */
-//    fun refreshUserInfo() {
-//        viewModelScope.launch {
-//            _profileState.value = _profileState.value.copy(isLoading = true, error = null)
-//            fetchUserFromApi()
-//        }
-//    }
+    fun isPasswordValid(): Boolean {
+        return _profileState.value.password.length >= 8
+    }
+
+    // метод для сохранения во внутреннее хранилище аватарки
+    fun copyPhotoPickerUriToInternalStorage(uri: Uri) {
+        // Создаём имя файла, например, с временной меткой
+        val filename = "avatar_${System.currentTimeMillis()}.jpg"
+        val destination = File(context.filesDir, filename)
+
+        context.contentResolver.openInputStream(uri)?.use { inputStream ->
+            destination.outputStream().use { outputStream ->
+                inputStream.copyTo(outputStream)
+            }
+        }
+        _profileState.value = _profileState.value.copy(avatarPath = destination.absolutePath)
+        viewModelScope.launch {
+            userPrefsRepository.saveAvatarPath(destination.absolutePath)
+        }
+    }
 
     /**
      * Выход из аккаунта - очистка данных
@@ -190,8 +195,8 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             secretStorage.clearTokens()
             userPrefsRepository.clearUserPrefs()
-            _profileState.value = ProfileState() // Сброс в дефолтное состояние
-            Log.i("ProfileViewModel", "Пользователь вышел из аккаунта")
+            _profileState.value = ProfileState(avatarPath = null) // Сброс в дефолтное состояние
+            Log.i("+++", "Пользователь вышел из аккаунта")
         }
     }
 }

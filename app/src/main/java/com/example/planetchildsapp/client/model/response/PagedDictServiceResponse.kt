@@ -6,8 +6,8 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class PagedDictServiceResponse(
     @SerialName("content")
-    val content: List<DictServiceResponse>,
-    
-    @SerialName("pageInfo")
-    val pageInfo: PageInfo
+    val content: List<DictServiceResponse> = emptyList(),
+
+    @SerialName("page")
+    val page: PageInfo? = null
 )

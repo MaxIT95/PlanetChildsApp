@@ -5,21 +5,21 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class CoachServiceRequest(
-    @SerialName("coachId")
-    val coachId: Long,
-    
-    @SerialName("serviceId")
-    val serviceId: Long,
-    
-    @SerialName("servicePlaceId")
-    val servicePlaceId: Long,
-    
-    @SerialName("price")
-    val price: Double? = null,
-    
-    @SerialName("duration")
-    val duration: Int? = null,
-    
-    @SerialName("description")
-    val description: String? = null
+    @SerialName("userId")
+    val userId: Long,
+
+    @SerialName("dictServiceId")
+    val dictServiceId: Long,
+
+    // Cost for one-time service (minimum: 0)
+    @SerialName("costOneTime")
+    val costOneTime: Double,
+
+    // Cost for membership (minimum: 0)
+    @SerialName("costMembership")
+    val costMembership: Double,
+
+    // Coach salary for this service (minimum: 0)
+    @SerialName("salary")
+    val salary: Double
 )

@@ -1,6 +1,7 @@
 package com.example.planetchildsapp.ui.screen.enter
 
 import android.annotation.SuppressLint
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,11 +11,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
@@ -26,6 +30,7 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,12 +40,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.planetchildsapp.R
+import com.example.planetchildsapp.ui.navigation.Destination
+import com.example.planetchildsapp.utils.RoleSelector
+import com.example.planetchildsapp.utils.UserRole
 import com.example.planetchildsapp.ui.theme.PlanetChildAppTypography
 import com.example.planetchildsapp.ui.theme.SurfaceVariantColor
 import com.example.planetchildsapp.view_model.RegistrationViewModel
@@ -56,66 +66,68 @@ fun RegistrationScreen(
 
     Column(
         modifier = Modifier
-            .padding(top = 250.dp, bottom = 16.dp)
+            .navigationBarsPadding()
+            .padding(top = 250.dp)
             .fillMaxWidth()
     ) {
-        AuthHeader()
+        AuthHeader("Регистрация", 150)
         Spacer(Modifier.padding(20.dp))
 
         val state by viewModel.uiState.collectAsState()
         val errorState by viewModel.errorsUiState.collectAsState()
 
-        CommonTextField(
-            text = state.name,
-            "Имя",
-            {
+        EnterTextField(
+            state.name, {
                 viewModel.onNameChange(it)
-            }, errorState.isNameValid
+            }, errorState.isNameValid,
+            "Введите ваше имя",
+            Icons.Default.Person
         )
+        Spacer(Modifier.padding(5.dp))
 
-        CommonTextField(
-            text = state.email,
-            "Почта",
-            {
+        EnterTextField(
+            state.email, {
                 viewModel.onEmailChange(it)
-            }, errorState.isEmailValid
+            }, errorState.isEmailValid,
+            "Введите вашу эл. почту",
+            Icons.Default.Email
         )
+        Spacer(Modifier.padding(5.dp))
 
-        PasswordTextField(
-            text = state.password,
-            {
-                viewModel.onPasswordChange(it)
-            }, errorState.isPasswordValid
-        )
+        PasswordField(state.password, {
+            viewModel.onPasswordChange(it)
+        }, errorState.isPasswordValid, "Введите пароль")
+
+        Spacer(Modifier.padding(5.dp))
+
+        PasswordField(state.repeatPassword, {
+            viewModel.onRepeatPasswordChange(it)
+        }, errorState.isPasswordValid, "Подтвердите пароль")
+
 
         Spacer(Modifier.padding(10.dp))
-        // Роль
-        var roleState by remember { mutableStateOf("Тренер") }
-        RoleSelectorButtons(
-            roleState, { roleState = "Тренер" },
-            { roleState = "Ученик" })
 
+        var selectedRole by remember { mutableStateOf(UserRole.Coach) }
+
+        RoleSelector(
+            selectedRole, { selectedRole = it},
+            Modifier
+        )
         Spacer(Modifier.padding(10.dp))
-
-        if (state.errorMessage != null) {
-            Text(text = state.errorMessage!!, color = Color.Red,
-                style = PlanetChildAppTypography.bodyLarge,
-                modifier = Modifier.padding(20.dp))
-        }
 
         Button(
             {
-                if (roleState == "Тренер") {
-                    //todo переход на выбор услуг с передачей данных из 3 полей
+                if (selectedRole == UserRole.Coach) {
+                    //todo переход на выбор услуг
                 } else {
-                    //todo отправляем запрос на регистрацию
                     viewModel.register()
                 }
             },
             enabled = !state.isLoading,
             modifier = Modifier
-                .width(250.dp)
-                .height(60.dp)
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp)
+                .height(50.dp)
                 .align(Alignment.CenterHorizontally)
         ) {
             if (state.isLoading) {
@@ -126,12 +138,31 @@ fun RegistrationScreen(
             } else {
                 Text(
                     text = "Продолжить",
-                    style = PlanetChildAppTypography.displayLarge,
+                    style = PlanetChildAppTypography.titleSmall,
                 )
+            }
+        }
+        val context = LocalContext.current
+
+        if (errorState.errorMessage != null) {
+            Toast.makeText(context, errorState.errorMessage, Toast.LENGTH_SHORT).show()
+        }
+
+        LaunchedEffect(state.isSuccess) {
+            if (state.isSuccess) {
+                Toast.makeText(context, "Регистрация прошла успешно", Toast.LENGTH_SHORT)
+                    .show()
+                navHost.navigate(Destination.Home.route) {
+                    popUpTo(Destination.Registration.route) { inclusive = true }
+                    launchSingleTop = true
+                }
             }
         }
     }
 }
+
+//    }
+//}
 
 @Composable
 fun BackgroundRegistration(paddingValues: PaddingValues) {
@@ -151,7 +182,7 @@ fun BackgroundRegistration(paddingValues: PaddingValues) {
         Image(
             contentDescription = "фон",
             modifier = Modifier
-                .width(250.dp)
+                .width(350.dp)
                 .height(200.dp)
                 .align(Alignment.TopCenter)
                 .padding(top = 20.dp),
@@ -173,18 +204,18 @@ fun RoleSelectorButtons(
             )
             Text(
                 "Тренер",
-                style = PlanetChildAppTypography.titleSmall
+                style = PlanetChildAppTypography.bodyMedium
             )
         }
 
         Row(verticalAlignment = Alignment.CenterVertically) {
             RadioButton(
-                selected = roleState == "Ученик",
+                selected = roleState == "Родитель",
                 onClick = onClickStudy
             )
             Text(
-                "Ученик",
-                style = PlanetChildAppTypography.titleSmall
+                "Родитель",
+                style = PlanetChildAppTypography.bodyMedium
             )
         }
     }
@@ -262,13 +293,9 @@ fun PasswordTextField(
     )
 }
 
-//
-//@Composable
-//@Preview(showBackground = true, showSystemUi = true)
-//fun RegistrationScreenPreview() {
-//    PlanetChildsAppTheme {
-//        Scaffold { paddingValues ->
-//            RegistrationScreen(paddingValues, {},  )
-//        }
-//    }
-//}
+
+@Composable
+@Preview(showBackground = true, showSystemUi = true)
+fun RegistrationScreenPreview() {
+    BackgroundRegistration(PaddingValues(0.dp))
+}

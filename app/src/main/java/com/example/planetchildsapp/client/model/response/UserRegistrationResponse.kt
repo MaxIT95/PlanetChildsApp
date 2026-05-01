@@ -7,13 +7,15 @@ import kotlinx.serialization.Serializable
 data class UserRegistrationResponse(
     @SerialName("id")
     val id: Long,
-    
-    @SerialName("username")
-    val username: String,
-    
+
     @SerialName("email")
-    val email: String,
-    
-    @SerialName("role")
-    val role: String
+    val email: String? = null,
+
+    // Full name (firstName + lastName)
+    @SerialName("name")
+    val name: String? = null,
+
+    // format: date-time
+    @SerialName("createdAt")
+    val createdAt: String? = null
 )

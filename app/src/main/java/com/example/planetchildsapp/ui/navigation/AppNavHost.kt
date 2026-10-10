@@ -1,11 +1,13 @@
 package com.example.planetchildsapp.ui.navigation
 
-import HomeScreenWithBottomBar
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -15,6 +17,7 @@ import com.example.planetchildsapp.ui.screen.enter.EnterScreen
 import com.example.planetchildsapp.ui.screen.enter.GreetingScreen
 import com.example.planetchildsapp.ui.screen.enter.RegistrationScreen
 import com.example.planetchildsapp.ui.screen.enter.SplashScreen
+import com.example.planetchildsapp.ui.screen.home.HomeScreenWithBottomBar
 import com.example.planetchildsapp.view_model.AuthorizationViewModel
 import com.example.planetchildsapp.view_model.RegistrationViewModel
 import kotlinx.coroutines.delay
@@ -32,26 +35,29 @@ fun AppNavHost(
         composable(route = Destination.Splash.route) {
             val viewModel: AuthorizationViewModel = hiltViewModel()
             val isAuthenticated by viewModel.resultAuth.collectAsState()
+            val isAuthChecking by viewModel.isAuthChecking.collectAsState()
+            var isSplashDelayFinished by remember { mutableStateOf(false) }
 
-            // Запускаем проверку токена при загрузке экрана
             LaunchedEffect(Unit) {
                 viewModel.checkActualToken()
             }
-            
-            // Навигация в зависимости от результата
-            LaunchedEffect(isAuthenticated) {
+
+            LaunchedEffect(Unit) {
                 delay(2000)
-                if (isAuthenticated) {
-                    navHostController.navigate(Destination.Home.route) {
-                        popUpTo(Destination.Splash.route) { inclusive = true }
-                    }
-                } else {
-                    navHostController.navigate(Destination.Greeting.route) {
+                isSplashDelayFinished = true
+            }
+
+            LaunchedEffect(isAuthChecking, isAuthenticated, isSplashDelayFinished) {
+                if (!isAuthChecking && isSplashDelayFinished) {
+                    val destination =
+                        if (isAuthenticated) Destination.Home.route else Destination.Greeting.route
+
+                    navHostController.navigate(destination) {
                         popUpTo(Destination.Splash.route) { inclusive = true }
                     }
                 }
             }
-            // Показываем Splash UI во время проверки
+
             SplashScreen()
         }
 

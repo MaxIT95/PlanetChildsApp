@@ -1,0 +1,3110 @@
+openapi: 3.0.3
+info:
+  title: Planet Childhood API
+  description: API for Planet Childhood application
+  version: 0.0.1
+  contact:
+    name: Solarmtech
+    url: https://solarmtech.ru
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+  - url: https://api.planetchildhood.ru
+    description: Production server
+
+tags:
+  - name: User
+    description: User management operations
+  - name: Child
+    description: Child management operations
+  - name: CoachChildren
+    description: Coach-children linking operations
+  - name: DictService
+    description: Dictionary services management operations
+  - name: DictServicePlace
+    description: Dictionary service places management operations
+  - name: CoachService
+    description: Coach services management operations
+  - name: Event
+    description: Event management operations
+  - name: Schedule
+    description: Schedule service management operations
+  - name: CoachLinkRequest
+    description: Coach link request operations (client requests to link with a coach)
+
+paths:
+  /api/user/register:
+    post:
+      tags:
+        - User
+      summary: Register a new user
+      description: Creates a new user account with the provided information
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegistrationRequest'
+      responses:
+        '201':
+          description: User successfully registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserRegistrationResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: User with this email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/user/refresh:
+    post:
+      tags:
+        - User
+      summary: Refresh access token
+      description: Issues new access and refresh tokens
+      security: []
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshTokenResponse'
+        '401':
+          description: Invalid refresh token
+
+  /api/user/login:
+    post:
+      tags:
+        - User
+      summary: Authorization a user
+      description: User authentication to access the service
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthUserRequest'
+      responses:
+        '201':
+          description: User successfully authorization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthUserResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Incorrect login or password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/user:
+    get:
+      tags:
+        - User
+      summary: Search users with pagination
+      description: |
+        Retrieves a paginated list of users with optional filtering by name.
+        Supports case-insensitive name search.
+      operationId: getAllUsers
+      security:
+        - oauth2: []
+      parameters:
+        - name: name
+          in: query
+          required: false
+          description: Filter users by name (case-insensitive partial match)
+          schema:
+            type: string
+          example: Ivan
+        - name: role
+          in: query
+          required: false
+          description: Filter users by role name (e.g. ROLE_ADMIN, ROLE_COACH, ROLE_CLIENT)
+          schema:
+            type: string
+          example: ROLE_COACH
+        - name: pageNumber
+          in: query
+          required: false
+          description: Page number (0-indexed)
+          schema:
+            type: integer
+            format: int32
+            default: 0
+            minimum: 0
+          example: 0
+        - name: pageSize
+          in: query
+          required: false
+          description: Number of items per page
+          schema:
+            type: integer
+            format: int32
+            default: 20
+            minimum: 1
+            maximum: 100
+          example: 20
+      responses:
+        '200':
+          description: Users retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedUserResponse'
+        '400':
+          description: Invalid pagination parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/user/{userId}:
+    get:
+      tags:
+        - User
+      summary: Get user and profile information
+      description: Retrieves detailed information about a specific user including their profile
+      operationId: getUserById
+      security:
+        - oauth2: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: User information retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - User
+      summary: Update user and profile information
+      description: |
+      operationId: updateUser
+      security:
+        - oauth2: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileRequest'
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '400':
+          description: Invalid JSON Patch operation or data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Unprocessable Entity - JSON Patch operation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - User
+      summary: Delete user account
+      description: Permanently deletes a user account from both the application and Keycloak
+      operationId: deleteUser
+      security:
+        - oauth2: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: User deleted successfully
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/user/me:
+    get:
+      tags:
+        - User
+      summary: Get current user and profile information
+      description: Retrieves information about the currently authenticated user including their profile
+      operationId: getCurrentUser
+      security:
+        - oauth2: []
+      responses:
+        '200':
+          description: Current user information retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/user/profile/{profileId}/photo:
+    put:
+      tags:
+        - Profile
+      summary: Upload or update profile photo
+      description: |
+        Uploads a new profile photo or replaces an existing one.
+        Accepts image files in JPEG, PNG, or WebP format.
+      operationId: setProfilePhoto
+      security:
+        - oauth2: []
+      parameters:
+        - name: profileId
+          in: path
+          required: true
+          description: Profile ID
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - photo
+              properties:
+                photo:
+                  type: string
+                  format: binary
+                  description: Profile photo image file (JPEG, PNG, WebP)
+            encoding:
+              photo:
+                contentType: image/jpeg, image/png, image/webp
+      responses:
+        '200':
+          description: Profile photo uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+        '400':
+          description: Invalid image format or missing file
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Profile not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '413':
+          description: Payload Too Large - image file exceeds size limit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '415':
+          description: Unsupported Media Type - invalid image format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Profile
+      summary: Delete profile photo
+      description: Removes the current profile photo
+      operationId: deleteProfilePhoto
+      security:
+        - oauth2: []
+      parameters:
+        - name: profileId
+          in: path
+          required: true
+          description: Profile ID
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Profile photo deleted successfully
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Profile not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/child/add-child:
+    post:
+      tags:
+        - Child
+      summary: Add a new child
+      description: Creates a new child for the currently authenticated parent
+      operationId: addChild
+      security:
+        - oauth2: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                child:
+                  $ref: '#/components/schemas/ChildRequest'
+                picture:
+                  type: string
+                  format: binary
+                  description: Child photo (JPEG, PNG, WebP)
+            encoding:
+              picture:
+                contentType: image/jpeg, image/png, image/webp
+      responses:
+        '201':
+          description: Child created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChildResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/child:
+    get:
+      tags:
+        - Child
+      summary: Get current user's children
+      description: Retrieves all children for the currently authenticated parent with pagination
+      operationId: getMyChildren
+      security:
+        - oauth2: []
+      parameters:
+        - name: pageNumber
+          in: query
+          required: false
+          description: Page number (0-indexed)
+          schema:
+            type: integer
+            format: int32
+            default: 0
+            minimum: 0
+          example: 0
+        - name: pageSize
+          in: query
+          required: false
+          description: Number of items per page
+          schema:
+            type: integer
+            format: int32
+            default: 20
+            minimum: 1
+            maximum: 100
+          example: 20
+      responses:
+        '200':
+          description: Children retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedChildResponse'
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/child/{childId}:
+    get:
+      tags:
+        - Child
+      summary: Get child by ID
+      description: Retrieves a specific child by ID
+      operationId: getChildById
+      security:
+        - oauth2: []
+      parameters:
+        - name: childId
+          in: path
+          required: true
+          description: Child ID
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Child retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChildResponse'
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Child not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Child
+      summary: Update child
+      description: Updates an existing child
+      operationId: updateChild
+      security:
+        - oauth2: []
+      parameters:
+        - name: childId
+          in: path
+          required: true
+          description: Child ID
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChildRequest'
+      responses:
+        '200':
+          description: Child updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChildResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Child not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Child
+      summary: Delete child
+      description: Deletes a child by ID
+      operationId: deleteChild
+      security:
+        - oauth2: []
+      parameters:
+        - name: childId
+          in: path
+          required: true
+          description: Child ID
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Child deleted successfully
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Child not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/coach-children/link-child:
+    post:
+      tags:
+        - CoachChildren
+      summary: Link a child to the current coach
+      description: Creates a link between the authenticated coach and a child. Only coaches can perform this action.
+      operationId: linkChild
+      security:
+        - oauth2: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LinkChildRequest'
+      responses:
+        '201':
+          description: Child linked successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CoachChildrenResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - only coaches can link children
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Child not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Child is already linked to this coach
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/coach-children:
+    get:
+      tags:
+        - CoachChildren
+      summary: Get current coach's linked children
+      description: Retrieves all children linked to the currently authenticated coach with pagination
+      operationId: getMyLinkedChildren
+      security:
+        - oauth2: []
+      parameters:
+        - name: pageNumber
+          in: query
+          required: false
+          description: Page number (0-indexed)
+          schema:
+            type: integer
+            format: int32
+            default: 0
+            minimum: 0
+          example: 0
+        - name: pageSize
+          in: query
+          required: false
+          description: Number of items per page
+          schema:
+            type: integer
+            format: int32
+            default: 20
+            minimum: 1
+            maximum: 100
+          example: 20
+      responses:
+        '200':
+          description: Linked children retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedCoachChildrenResponse'
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/coach-children/{coachChildrenId}:
+    delete:
+      tags:
+        - CoachChildren
+      summary: Unlink a child from coach
+      description: Removes the link between the coach and a child
+      operationId: unlinkChild
+      security:
+        - oauth2: []
+      parameters:
+        - name: coachChildrenId
+          in: path
+          required: true
+          description: Coach-children link ID
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Child unlinked successfully
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Link not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/coach-link-request:
+    post:
+      tags:
+        - CoachLinkRequest
+      summary: Create a link request
+      description: Creates a link request from a client (or parent) to a coach. Either clientId or childId must be provided.
+      operationId: createLinkRequest
+      security:
+        - oauth2: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLinkRequestRequest'
+      responses:
+        '201':
+          description: Link request created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CoachLinkRequestResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Link request already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      tags:
+        - CoachLinkRequest
+      summary: Get current user's link requests
+      description: Retrieves link requests for the currently authenticated user with pagination. Coaches see incoming requests, clients see their outgoing requests.
+      operationId: getMyLinkRequests
+      security:
+        - oauth2: []
+      parameters:
+        - name: pageNumber
+          in: query
+          required: false
+          description: Page number (0-indexed)
+          schema:
+            type: integer
+            format: int32
+            default: 0
+            minimum: 0
+          example: 0
+        - name: pageSize
+          in: query
+          required: false
+          description: Number of items per page
+          schema:
+            type: integer
+            format: int32
+            default: 20
+            minimum: 1
+            maximum: 100
+          example: 20
+      responses:
+        '200':
+          description: Link requests retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedCoachLinkRequestResponse'
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/coach-link-request/{linkRequestId}:
+    delete:
+      tags:
+        - CoachLinkRequest
+      summary: Cancel or reject a link request
+      description: Cancels (by client) or rejects (by coach) a link request
+      operationId: deleteLinkRequest
+      security:
+        - oauth2: []
+      parameters:
+        - name: linkRequestId
+          in: path
+          required: true
+          description: Link request ID
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Link request deleted successfully
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Link request not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/dict-service:
+    get:
+      tags:
+        - DictService
+      summary: Search dictionary services with pagination
+      description: |
+        Retrieves a paginated list of dictionary services with optional filtering by name.
+        Supports case-insensitive partial name search.
+      operationId: searchDictServices
+      security:
+        - oauth2: []
+      parameters:
+        - name: name
+          in: query
+          required: false
+          description: Filter services by name (case-insensitive partial match)
+          schema:
+            type: string
+          example: Swimming
+        - name: pageNumber
+          in: query
+          required: false
+          description: Page number (0-indexed)
+          schema:
+            type: integer
+            format: int32
+            default: 0
+            minimum: 0
+          example: 0
+        - name: pageSize
+          in: query
+          required: false
+          description: Number of items per page
+          schema:
+            type: integer
+            format: int32
+            default: 20
+            minimum: 1
+            maximum: 100
+          example: 20
+      responses:
+        '200':
+          description: Dictionary services retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedDictServiceResponse'
+        '400':
+          description: Invalid pagination parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - DictService
+      summary: Create a new dictionary service
+      description: Creates a new dictionary service entry
+      operationId: createDictService
+      security:
+        - oauth2: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DictServiceRequest'
+      responses:
+        '201':
+          description: Dictionary service created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DictServiceResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Dictionary service with this name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/dict-service/{serviceId}:
+    get:
+      tags:
+        - DictService
+      summary: Get dictionary service by ID
+      description: Retrieves a specific dictionary service by its ID
+      operationId: getDictServiceById
+      security:
+        - oauth2: []
+      parameters:
+        - name: serviceId
+          in: path
+          required: true
+          description: Dictionary service ID
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Dictionary service retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DictServiceResponse'
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Dictionary service not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - DictService
+      summary: Update dictionary service
+      description: Updates an existing dictionary service
+      operationId: updateDictService
+      security:
+        - oauth2: []
+      parameters:
+        - name: serviceId
+          in: path
+          required: true
+          description: Dictionary service ID
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DictServiceRequest'
+      responses:
+        '200':
+          description: Dictionary service updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DictServiceResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Dictionary service not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Dictionary service with this name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - DictService
+      summary: Delete dictionary service
+      description: Deletes a dictionary service by its ID
+      operationId: deleteDictService
+      security:
+        - oauth2: []
+      parameters:
+        - name: serviceId
+          in: path
+          required: true
+          description: Dictionary service ID
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Dictionary service deleted successfully
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Dictionary service not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/dict-service-place:
+    get:
+      tags:
+        - DictServicePlace
+      summary: Search dictionary service places with pagination
+      description: |
+        Retrieves a paginated list of dictionary service places with optional filtering by name.
+        Supports case-insensitive partial name search.
+      operationId: searchDictServicePlaces
+      security:
+        - oauth2: []
+      parameters:
+        - name: name
+          in: query
+          required: false
+          description: Filter places by name (case-insensitive partial match)
+          schema:
+            type: string
+          example: Pool
+        - name: pageNumber
+          in: query
+          required: false
+          description: Page number (0-indexed)
+          schema:
+            type: integer
+            format: int32
+            default: 0
+            minimum: 0
+          example: 0
+        - name: pageSize
+          in: query
+          required: false
+          description: Number of items per page
+          schema:
+            type: integer
+            format: int32
+            default: 20
+            minimum: 1
+            maximum: 100
+          example: 20
+      responses:
+        '200':
+          description: Dictionary service places retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedDictServicePlaceResponse'
+        '400':
+          description: Invalid pagination parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - DictServicePlace
+      summary: Create a new dictionary service place
+      description: Creates a new dictionary service place entry
+      operationId: createDictServicePlace
+      security:
+        - oauth2: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DictServicePlaceRequest'
+      responses:
+        '201':
+          description: Dictionary service place created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DictServicePlaceResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Dictionary service place with this name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/dict-service-place/{placeId}:
+    get:
+      tags:
+        - DictServicePlace
+      summary: Get dictionary service place by ID
+      description: Retrieves a specific dictionary service place by its ID
+      operationId: getDictServicePlaceById
+      security:
+        - oauth2: []
+      parameters:
+        - name: placeId
+          in: path
+          required: true
+          description: Dictionary service place ID
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Dictionary service place retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DictServicePlaceResponse'
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Dictionary service place not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - DictServicePlace
+      summary: Update dictionary service place
+      description: Updates an existing dictionary service place
+      operationId: updateDictServicePlace
+      security:
+        - oauth2: []
+      parameters:
+        - name: placeId
+          in: path
+          required: true
+          description: Dictionary service place ID
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DictServicePlaceRequest'
+      responses:
+        '200':
+          description: Dictionary service place updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DictServicePlaceResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Dictionary service place not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Dictionary service place with this name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - DictServicePlace
+      summary: Delete dictionary service place
+      description: Deletes a dictionary service place by its ID
+      operationId: deleteDictServicePlace
+      security:
+        - oauth2: []
+      parameters:
+        - name: placeId
+          in: path
+          required: true
+          description: Dictionary service place ID
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Dictionary service place deleted successfully
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Dictionary service place not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/coach-service:
+    get:
+      tags:
+        - CoachService
+      summary: Search coach services with pagination
+      description: |
+        Retrieves a paginated list of coach services with optional filtering by user ID or dictionary service ID.
+        Use userId to find all services a coach provides, or dictServiceId to find all coaches offering a specific service.
+      operationId: searchCoachServices
+      security:
+        - oauth2: []
+      parameters:
+        - name: userId
+          in: query
+          required: false
+          description: Filter by coach user ID (find services provided by specific coach)
+          schema:
+            type: integer
+            format: int64
+          example: 1
+        - name: dictServiceId
+          in: query
+          required: false
+          description: Filter by dictionary service ID (find coaches providing specific service)
+          schema:
+            type: integer
+            format: int64
+          example: 1
+        - name: pageNumber
+          in: query
+          required: false
+          description: Page number (0-indexed)
+          schema:
+            type: integer
+            format: int32
+            default: 0
+            minimum: 0
+          example: 0
+        - name: pageSize
+          in: query
+          required: false
+          description: Number of items per page
+          schema:
+            type: integer
+            format: int32
+            default: 20
+            minimum: 1
+            maximum: 100
+          example: 20
+      responses:
+        '200':
+          description: Coach services retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedCoachServiceResponse'
+        '400':
+          description: Invalid pagination parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - CoachService
+      summary: Create a new coach service
+      description: Creates a new coach service linking a coach to a dictionary service with pricing
+      operationId: createCoachService
+      security:
+        - oauth2: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CoachServiceRequest'
+      responses:
+        '201':
+          description: Coach service created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CoachServiceResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User or dictionary service not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/coach-service/{coachServiceId}:
+    get:
+      tags:
+        - CoachService
+      summary: Get coach service by ID
+      description: Retrieves a specific coach service by its ID
+      operationId: getCoachServiceById
+      security:
+        - oauth2: []
+      parameters:
+        - name: coachServiceId
+          in: path
+          required: true
+          description: Coach service ID
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Coach service retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CoachServiceResponse'
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Coach service not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - CoachService
+      summary: Update coach service
+      description: Updates an existing coach service
+      operationId: updateCoachService
+      security:
+        - oauth2: []
+      parameters:
+        - name: coachServiceId
+          in: path
+          required: true
+          description: Coach service ID
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CoachServiceRequest'
+      responses:
+        '200':
+          description: Coach service updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CoachServiceResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Coach service not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - CoachService
+      summary: Delete coach service
+      description: Deletes a coach service by its ID
+      operationId: deleteCoachService
+      security:
+        - oauth2: []
+      parameters:
+        - name: coachServiceId
+          in: path
+          required: true
+          description: Coach service ID
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Coach service deleted successfully
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Coach service not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/coach-service/me:
+    get:
+      tags:
+        - CoachService
+      summary: Get current coach's services
+      description: Retrieves all services provided by the currently authenticated coach with pagination
+      operationId: getMyCoachServices
+      security:
+        - oauth2: []
+      parameters:
+        - name: pageNumber
+          in: query
+          required: false
+          description: Page number (0-indexed)
+          schema:
+            type: integer
+            format: int32
+            default: 0
+            minimum: 0
+          example: 0
+        - name: pageSize
+          in: query
+          required: false
+          description: Number of items per page
+          schema:
+            type: integer
+            format: int32
+            default: 20
+            minimum: 1
+            maximum: 100
+          example: 20
+      responses:
+        '200':
+          description: Coach services retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedCoachServiceResponse'
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/schedule/create:
+    post:
+      tags:
+        - Schedule
+      summary: Create a schedule for a trainer
+      description: Create a schedule for a trainer
+      operationId: createSchedule
+      security:
+        - oauth2: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleCreateRequest'
+      responses:
+        '201':
+          description: Schedule created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduleResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/schedule:
+    get:
+      tags:
+        - Schedule
+      summary: Get all schedules with pagination
+      description: Retrieves a paginated list of all available schedules. Clients can see trainer name, date and time window.
+      operationId: getSchedules
+      security:
+        - oauth2: [ ]
+      parameters:
+        - name: pageNumber
+          in: query
+          required: false
+          description: Page number (0-based)
+          schema:
+            type: integer
+            format: int32
+            default: 0
+            minimum: 0
+          example: 0
+        - name: trainerId
+          in: query
+          required: false
+          description: Filter schedules by trainer ID
+          schema:
+            type: integer
+            format: int64
+          example: 1
+        - name: pageSize
+          in: query
+          required: false
+          description: Number of items per page
+          schema:
+            type: integer
+            format: int32
+            default: 20
+            minimum: 1
+            maximum: 100
+          example: 20
+      responses:
+        '200':
+          description: Paginated list of schedules
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedScheduleResponse'
+        '400':
+          description: Invalid pagination parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/schedule/{scheduleId}:
+    get:
+      tags:
+        - Schedule
+      summary: Get schedule by ID
+      description: Retrieves a specific schedule by its ID
+      operationId: getScheduleById
+      security:
+        - oauth2: [ ]
+      parameters:
+        - name: scheduleId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      responses:
+        '200':
+          description: Schedule details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduleResponse'
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Schedule not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/event:
+    get:
+      tags:
+        - Event
+      summary: Get all events with pagination
+      description: Retrieves a paginated list of events
+      operationId: getAllEvents
+      security:
+        - oauth2: []
+      parameters:
+        - name: pageNumber
+          in: query
+          required: false
+          description: Page number (0-indexed)
+          schema:
+            type: integer
+            format: int32
+            default: 0
+            minimum: 0
+          example: 0
+        - name: pageSize
+          in: query
+          required: false
+          description: Number of items per page
+          schema:
+            type: integer
+            format: int32
+            default: 20
+            minimum: 1
+            maximum: 100
+          example: 20
+      responses:
+        '200':
+          description: Events retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedEventResponse'
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - Event
+      summary: Create a new event
+      description: Creates a new event with description, date, and optional picture
+      operationId: createEvent
+      security:
+        - oauth2: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+                - description
+                - eventDate
+              properties:
+                name:
+                  type: string
+                  maxLength: 1000
+                  description: Short event name
+                  example: New Year Eve Party
+                description:
+                  type: string
+                  maxLength: 1000
+                  description: Event description
+                  example: Annual swimming competition for kids
+                eventDate:
+                  type: string
+                  format: date
+                  description: Event date
+                  example: '2026-06-15'
+                ageFrom:
+                  type: integer
+                  format: int32
+                  description: Minimum child age for the event
+                  example: 3
+                ageTo:
+                  type: integer
+                  format: int32
+                  description: Maximum child age for the event
+                  example: 7
+                picture:
+                  type: string
+                  format: binary
+                  description: Event advertisement picture (JPEG, PNG, WebP)
+            encoding:
+              picture:
+                contentType: image/jpeg, image/png, image/webp
+      responses:
+        '201':
+          description: Event created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/event/{eventId}:
+    get:
+      tags:
+        - Event
+      summary: Get event by ID
+      description: Retrieves a specific event by its ID
+      operationId: getEventById
+      security:
+        - oauth2: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          description: Event ID
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Event retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventResponse'
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Event
+      summary: Update event
+      description: Updates an existing event
+      operationId: updateEvent
+      security:
+        - oauth2: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          description: Event ID
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  maxLength: 1000
+                  description: Short event name
+                  example: New Year Eve Party
+                description:
+                  type: string
+                  maxLength: 1000
+                  description: Event description
+                  example: Annual swimming competition for kids
+                eventDate:
+                  type: string
+                  format: date
+                  description: Event date
+                  example: '2026-06-15'
+                ageFrom:
+                  type: integer
+                  format: int32
+                  description: Minimum child age for the event
+                  example: 3
+                ageTo:
+                  type: integer
+                  format: int32
+                  description: Maximum child age for the event
+                  example: 7
+                picture:
+                  type: string
+                  format: binary
+                  description: Event advertisement picture (JPEG, PNG, WebP)
+            encoding:
+              picture:
+                contentType: image/jpeg, image/png, image/webp
+      responses:
+        '200':
+          description: Event updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Event
+      summary: Delete event
+      description: Deletes an event by its ID
+      operationId: deleteEvent
+      security:
+        - oauth2: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          description: Event ID
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Event deleted successfully
+        '401':
+          description: Unauthorized - valid authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    Role:
+      type: string
+      enum:
+        - PARENT
+        - COACH
+        - ADMIN
+      description: User role
+
+    AuthUserRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: User's email address
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          minLength: 8
+          description: User's password (minimum 8 characters)
+          example: SecurePass123!
+
+    AuthUserResponse:
+      type: object
+      x-class-extra-annotation: "@lombok.Builder"
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        email:
+          type: string
+          format: email
+
+    RefreshTokenRequest:
+      type: object
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+
+    RefreshTokenResponse:
+      type: object
+      x-class-extra-annotation: "@lombok.Builder"
+      required:
+        - accessToken
+        - refreshToken
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+
+    ScheduleCreateRequest:
+      type: object
+      required:
+        - from
+        - to
+        - trainerId
+        - scheduleDate
+      properties:
+        from:
+          type: string
+          maxLength: 100
+          description: From what time
+          example: '13:00:00'
+        to:
+          type: string
+          maxLength: 100
+          description: To what time
+          example: '14:00:00'
+        trainerId:
+          type: integer
+          format: int64
+          example: 25
+        scheduleDate:
+          type: string
+          format: date
+          description: Schedule date
+          example: '2026-06-15'
+
+    UserRegistrationRequest:
+      type: object
+      required:
+        - role
+        - email
+        - password
+        - firstName
+        - lastName
+      properties:
+        role:
+          $ref: '#/components/schemas/Role'
+        email:
+          type: string
+          format: email
+          description: User's email address
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          minLength: 8
+          description: User's password (minimum 8 characters)
+          example: SecurePass123!
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: User's first name
+          example: Ivan
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: User's last name
+          example: Petrov
+        middleName:
+          type: string
+          maxLength: 50
+          description: User's middle name (optional)
+          example: Sergeevich
+
+    UserRegistrationResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        email:
+          type: string
+          format: email
+          description: User's email address
+          example: user@example.com
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: User's full name
+        createdAt:
+          type: string
+          format: date-time
+          description: Account creation timestamp
+          example: '2025-11-07T10:30:00Z'
+
+    UserProfileRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: User's email address
+          example: user@example.com
+        name:
+          type: string
+          description: User's full name
+          example: Ivan Petrov
+        description:
+          type: string
+          maxLength: 500
+          description: Profile description
+          example: Experienced parent with two wonderful children
+        contents:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProfileContentRequest'
+
+    ProfileContentRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        data:
+          type: string
+          maxLength: 255
+
+    UserProfileResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: User ID
+          example: 123
+        email:
+          type: string
+          format: email
+          description: User's email address
+          example: user@example.com
+        name:
+          type: string
+          description: User's full name
+          example: Ivan Petrov
+        createdAt:
+          type: string
+          format: date-time
+          description: Account creation timestamp
+          example: '2025-11-07T10:30:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          description: Account last update timestamp
+          example: '2025-11-07T10:30:00Z'
+        profile:
+          $ref: '#/components/schemas/ProfileResponse'
+
+    ProfileResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Profile ID
+          example: 456
+        description:
+          type: string
+          maxLength: 500
+          description: Profile description
+          example: Experienced parent with two wonderful children
+        hasPhoto:
+          type: boolean
+          description: Whether the profile has a photo uploaded
+        contents:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProfileContentResponse'
+    ProfileContentResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        data:
+          type: string
+          maxLength: 255
+
+    ChildRequest:
+      type: object
+      required:
+        - name
+        - birthday
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Child's name
+          example: Alex
+        birthday:
+          type: string
+          format: date
+          description: Child's birthday
+          example: '2018-05-15'
+
+    ChildResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Child ID
+          example: 1
+        name:
+          type: string
+          description: Child's name
+          example: Alex
+        birthday:
+          type: string
+          format: date
+          description: Child's birthday
+          example: '2018-05-15'
+        photo:
+          type: string
+          format: byte
+          description: Child photo
+        parent:
+          $ref: '#/components/schemas/SearchUserResponse'
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+          example: '2025-11-07T10:30:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          example: '2025-11-07T10:30:00Z'
+
+    PagedChildResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          description: List of children in the current page
+          items:
+            $ref: '#/components/schemas/ChildResponse'
+        page:
+          $ref: '#/components/schemas/PageInfo'
+
+    LinkChildRequest:
+      type: object
+      required:
+        - childId
+      properties:
+        childId:
+          type: integer
+          format: int64
+          description: Child ID to link
+          example: 1
+
+    CoachChildrenResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Coach-children link ID
+          example: 1
+        coach:
+          $ref: '#/components/schemas/SearchUserResponse'
+        child:
+          $ref: '#/components/schemas/ChildResponse'
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+          example: '2025-11-07T10:30:00Z'
+
+    PagedCoachChildrenResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          description: List of coach-children links in the current page
+          items:
+            $ref: '#/components/schemas/CoachChildrenResponse'
+        page:
+          $ref: '#/components/schemas/PageInfo'
+
+    CreateLinkRequestRequest:
+      type: object
+      properties:
+        coachId:
+          type: integer
+          format: int64
+          description: Coach ID to send the request to
+          example: 1
+        clientId:
+          type: integer
+          format: int64
+          description: Client (user) ID requesting the link. Either clientId or childId must be provided.
+          example: 2
+        childId:
+          type: integer
+          format: int64
+          description: Child ID requesting the link. Either clientId or childId must be provided.
+          example: 1
+
+    CoachLinkRequestResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Link request ID
+          example: 1
+        coach:
+          $ref: '#/components/schemas/SearchUserResponse'
+        client:
+          $ref: '#/components/schemas/SearchUserResponse'
+        child:
+          $ref: '#/components/schemas/ChildResponse'
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+          example: '2025-11-07T10:30:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          example: '2025-11-07T10:30:00Z'
+
+    PagedCoachLinkRequestResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          description: List of link requests in the current page
+          items:
+            $ref: '#/components/schemas/CoachLinkRequestResponse'
+        page:
+          $ref: '#/components/schemas/PageInfo'
+
+    ErrorResponse:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: Error occurrence timestamp
+          example: '2025-11-07T10:30:00Z'
+        status:
+          type: integer
+          description: HTTP status code
+          example: 400
+        error:
+          type: string
+          description: Error type
+          example: Bad Request
+        message:
+          type: string
+          description: Error message
+          example: Invalid email format
+        path:
+          type: string
+          description: Request path
+          example: /api/user/register
+    PageInfo:
+      type: object
+      description: Pagination metadata
+      properties:
+        size:
+          type: integer
+          format: int32
+          description: Number of items per page
+          example: 20
+        number:
+          type: integer
+          format: int32
+          description: Current page number (0-indexed)
+          example: 0
+        totalElements:
+          type: integer
+          format: int64
+          description: Total number of items across all pages
+          example: 100
+        totalPages:
+          type: integer
+          format: int32
+          description: Total number of pages
+          example: 5
+        first:
+          type: boolean
+          description: Indicates whether this is the first page
+          example: true
+        last:
+          type: boolean
+          description: Indicates whether this is the last page
+          example: false
+
+    PagedUserResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          description: List of users in the current page
+          items:
+            $ref: '#/components/schemas/SearchUserResponse'
+        page:
+          $ref: '#/components/schemas/PageInfo'
+
+    SearchUserResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: User ID
+          example: 123
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+          description: User's full name
+
+    DictServiceRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Dictionary service name
+          example: Swimming lessons
+
+    DictServiceResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Dictionary service ID
+          example: 1
+        name:
+          type: string
+          description: Dictionary service name
+          example: Swimming lessons
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+          example: '2025-11-07T10:30:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          example: '2025-11-07T10:30:00Z'
+
+    PagedDictServiceResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          description: List of dictionary services in the current page
+          items:
+            $ref: '#/components/schemas/DictServiceResponse'
+        page:
+          $ref: '#/components/schemas/PageInfo'
+
+    DictServicePlaceRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Dictionary service place name
+          example: Swimming pool
+
+    DictServicePlaceResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Dictionary service place ID
+          example: 1
+        name:
+          type: string
+          description: Dictionary service place name
+          example: Swimming pool
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+          example: '2025-11-07T10:30:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          example: '2025-11-07T10:30:00Z'
+
+    PagedDictServicePlaceResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          description: List of dictionary service places in the current page
+          items:
+            $ref: '#/components/schemas/DictServicePlaceResponse'
+        page:
+          $ref: '#/components/schemas/PageInfo'
+
+    CoachServiceRequest:
+      type: object
+      required:
+        - userId
+        - dictServiceId
+        - costOneTime
+        - costMembership
+        - salary
+      properties:
+        userId:
+          type: integer
+          format: int64
+          description: Coach user ID
+          example: 1
+        dictServiceId:
+          type: integer
+          format: int64
+          description: Dictionary service ID
+          example: 1
+        costOneTime:
+          type: number
+          format: double
+          minimum: 0
+          description: Cost for one-time service
+          example: 1500.00
+        costMembership:
+          type: number
+          format: double
+          minimum: 0
+          description: Cost for membership
+          example: 5000.00
+        salary:
+          type: number
+          format: double
+          minimum: 0
+          description: Coach salary for this service
+          example: 1000.00
+
+    CoachServiceResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Coach service ID
+          example: 1
+        user:
+          $ref: '#/components/schemas/SearchUserResponse'
+        dictService:
+          $ref: '#/components/schemas/DictServiceResponse'
+        costOneTime:
+          type: number
+          format: double
+          description: Cost for one-time service
+          example: 1500.00
+        costMembership:
+          type: number
+          format: double
+          description: Cost for membership
+          example: 5000.00
+        salary:
+          type: number
+          format: double
+          description: Coach salary for this service
+          example: 1000.00
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+          example: '2025-11-07T10:30:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          example: '2025-11-07T10:30:00Z'
+
+    PagedCoachServiceResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          description: List of coach services in the current page
+          items:
+            $ref: '#/components/schemas/CoachServiceResponse'
+        page:
+          $ref: '#/components/schemas/PageInfo'
+
+    ScheduleResponse:
+      type: object
+      x-class-extra-annotation: "@lombok.Builder"
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Schedule ID
+          example: 1
+        trainerId:
+          type: integer
+          format: int64
+          description: Trainer user ID
+          example: 25
+        trainerName:
+          type: string
+          description: Trainer full name
+          example: 'Иванов Иван'
+        scheduleDate:
+          type: string
+          format: date
+          description: Schedule date
+          example: '2026-06-15'
+        from:
+          type: string
+          description: Start time
+          example: '13:00:00'
+        to:
+          type: string
+          description: End time
+          example: '14:00:00'
+        status:
+          type: string
+          description: Schedule status (ACTIVE or EXPIRED)
+          example: 'ACTIVE'
+
+    PagedScheduleResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          description: List of schedules in the current page
+          items:
+            $ref: '#/components/schemas/ScheduleResponse'
+        page:
+          $ref: '#/components/schemas/PageInfo'
+
+    EventResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Event ID
+          example: 1
+        name:
+          type: string
+          description: Short event name
+          example: New Year Eve Party
+        description:
+          type: string
+          description: Event description
+          example: Annual swimming competition for kids
+        eventDate:
+          type: string
+          format: date
+          description: Event date
+          example: '2026-06-15'
+        ageFrom:
+          type: integer
+          format: int32
+          description: Minimum child age for the event
+          example: 3
+        ageTo:
+          type: integer
+          format: int32
+          description: Maximum child age for the event
+          example: 7
+        picture:
+          type: string
+          format: byte
+          description: Event advertisement picture (Base64 encoded)
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+          example: '2025-11-07T10:30:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          example: '2025-11-07T10:30:00Z'
+
+    PagedEventResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          description: List of events in the current page
+          items:
+            $ref: '#/components/schemas/EventResponse'
+        page:
+          $ref: '#/components/schemas/PageInfo'
+
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      description: OAuth2 security scheme for Planet Childhood API
+      flows:
+        clientCredentials:
+          tokenUrl: https://auth.planetchildhood.ru/oauth/token
+          scopes: {}

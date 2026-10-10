@@ -39,10 +39,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -50,7 +54,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.rememberNavController
 import com.example.planetchildsapp.R
 import com.example.planetchildsapp.data.model.UserStorageInfo
 import com.example.planetchildsapp.ui.navigation.Destination
@@ -76,57 +82,41 @@ fun AuthorizationScreen(
             .padding(top = 250.dp, bottom = 16.dp)
             .fillMaxWidth()
     ) {
-    }
 
-    val state by authViewModel.uiState.collectAsState()
-    val errorState by authViewModel.errorsUiState.collectAsState()
+        val state by authViewModel.uiState.collectAsState()
+        val errorState by authViewModel.errorsUiState.collectAsState()
+        val dropdownUsersState by authViewModel.showDropdownState.collectAsState()
+        val usersLoginEarly by authViewModel.usersInfoState.collectAsState()
 
-    AuthHeader("Войти", 100)
-    Spacer(Modifier.padding(20.dp))
+        AuthHeader("Войти", 85)
+        Spacer(Modifier.padding(20.dp))
 
-    CommonTextHeader("Логин", 30)
+        CommonTextHeader("Логин", 30)
 
-    EnterTextField(
-        state.login, {
-            authViewModel.onLoginChange(it)
-        }, errorState.isLoginValid,
-        "Введите логин/эл. почту",
-        Icons.Default.Person
-    )
+        LoginField(
+            text = state.login,
+            onValueChange = { authViewModel.onLoginChange(it) },
+            isValueValid = errorState.isLoginValid,
+            placeholder = "Введите логин/эл. почту",
+            imageVector = Icons.Default.Person,
+            suggestions = usersLoginEarly,
+            expanded = dropdownUsersState,
+            onFocusChanged = authViewModel::onLoginFocusChanged,
+            onDismissRequest = authViewModel::hideDropdown,
+            onSuggestionSelected = authViewModel::onLoginSuggestionSelected
+        )
 
-    Spacer(Modifier.padding(15.dp))
-    CommonTextHeader("Пароль", 30)
+        Spacer(Modifier.padding(15.dp))
+        CommonTextHeader("Пароль", 30)
 
-    PasswordField(state.password, {
-        authViewModel.onPasswordChange(it)
-    }, errorState.isPasswordValid, "Введите пароль")
-    Spacer(Modifier.padding(15.dp))
+        PasswordField(state.password, {
+            authViewModel.onPasswordChange(it)
+        }, errorState.isPasswordValid, "Введите пароль")
+        Spacer(Modifier.padding(15.dp))
 
-    ForgotPasswordButton()
+        ForgotPasswordButton()
 
-    LoginButton(authViewModel, state, navHost)
-}
-//}
-
-@Composable
-fun UsersDropDown(authViewModel: AuthorizationViewModel) {
-
-    val users: List<UserStorageInfo> = authViewModel.
-    // Выпадающий список пользователей
-    DropdownMenu(
-        expanded = false,
-        onDismissRequest = { /* TODO */ }
-    ) {
-        users.forEach { user ->
-            DropdownMenuItem(
-                text = { Text(user.login) },
-                onClick = {
-                    viewModel.selectUser(user)
-                    username = user.username
-                    password = user.password
-                }
-            )
-        }
+        LoginButton(authViewModel, state, navHost)
     }
 }
 
@@ -218,6 +208,79 @@ fun CommonTextHeader(text: String, startPadding: Int) {
         modifier = Modifier.padding(start = startPadding.dp),
         style = PlanetChildAppTypography.labelSmall
     )
+}
+
+@Composable
+fun LoginField(
+    text: String,
+    onValueChange: (String) -> Unit,
+    isValueValid: Boolean,
+    placeholder: String,
+    imageVector: ImageVector,
+    suggestions: List<UserStorageInfo>,
+    expanded: Boolean,
+    onFocusChanged: (Boolean) -> Unit,
+    onDismissRequest: () -> Unit,
+    onSuggestionSelected: (UserStorageInfo) -> Unit,
+    horizontalPadding: Dp = 20.dp
+) {
+    val focusManager = LocalFocusManager.current
+    val density = LocalDensity.current
+    val filteredSuggestions = remember(text, suggestions) {
+        if (text.isEmpty()) suggestions else suggestions.filter {
+            it.login.contains(text, ignoreCase = true)
+        }
+    }
+
+    var textFieldWidth by remember { mutableStateOf(0) }
+
+    Box(modifier = Modifier.padding(horizontal = horizontalPadding)) {
+        TextField(
+            onValueChange = onValueChange,
+            value = text,
+            singleLine = true,
+            placeholder = { Text(placeholder, style = PlanetChildAppTypography.bodyMedium) },
+            leadingIcon = {
+                Icon(
+                    tint = if (!isValueValid) Color.Red else Color.DarkGray,
+                    imageVector = imageVector,
+                    contentDescription = "Icon for login field"
+                )
+            },
+            colors = TextFieldDefaults.colors(
+                errorContainerColor = Color.White,
+                unfocusedIndicatorColor = Color.Black,
+                cursorColor = SurfaceVariantColor,
+                focusedIndicatorColor = SurfaceVariantColor,
+                unfocusedContainerColor = Color.Transparent,
+                focusedLabelColor = SurfaceVariantColor,
+                focusedContainerColor = Color.Transparent
+            ),
+            isError = !isValueValid,
+            modifier = Modifier
+                .fillMaxWidth()
+                .onFocusChanged { focusState -> onFocusChanged(focusState.isFocused) }
+                .onGloballyPositioned { layoutCoordinates ->
+                    textFieldWidth = layoutCoordinates.size.width
+                }
+        )
+
+        DropdownMenu(
+            expanded = expanded && filteredSuggestions.isNotEmpty(),
+            onDismissRequest = onDismissRequest,
+            modifier = Modifier.width(with(density) { textFieldWidth.toDp() })
+        ) {
+            filteredSuggestions.forEach { user ->
+                DropdownMenuItem(
+                    text = { Text(user.login, style = PlanetChildAppTypography.bodyMedium) },
+                    onClick = {
+                        onSuggestionSelected(user)
+                        focusManager.clearFocus()
+                    }
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -364,12 +427,9 @@ fun LoginButton(
 @Composable
 @Preview(showBackground = true, showSystemUi = true)
 fun LoginFieldPreview() {
-    Column {
-        Spacer(Modifier.padding(vertical = 100.dp))
-        EnterTextField(
-            "name", {}, true,
-            "placeholder", Icons.Default.Person
-        )
-    }
-
+    AuthorizationScreen(
+        PaddingValues(16.dp),
+        rememberNavController(),
+        viewModel()
+    )
 }

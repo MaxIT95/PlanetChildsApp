@@ -11,6 +11,9 @@ data class CoachChildrenResponse(
     @SerialName("coach")
     val coach: SearchUserResponse? = null,
 
+    @SerialName("client")
+    val client: SearchUserResponse? = null,
+
     @SerialName("child")
     val child: ChildResponse? = null,
 

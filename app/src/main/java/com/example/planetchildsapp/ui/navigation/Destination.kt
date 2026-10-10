@@ -10,6 +10,7 @@ sealed class Destination(val route: String) {
     data object Schedule : Destination(ROUTE_SCHEDULE)
     data object Events : Destination(ROUTE_EVENTS)
     data object Profile : Destination(ROUTE_PROFILE)
+    data object Clients : Destination(ROUTE_CLIENTS)
     data object Home : Destination(ROUTE_HOME)
     data object EditProfile : Destination(ROUTE_EDIT_PROFILE)
     data object AddChild : Destination(ROUTE_ADD_CHILD)
@@ -25,6 +26,7 @@ sealed class Destination(val route: String) {
         private const val ROUTE_SCHEDULE = "route_schedule"
         private const val ROUTE_EVENTS = "route_events"
         private const val ROUTE_PROFILE = "route_profile"
+        private const val ROUTE_CLIENTS = "route_clients"
         private const val ROUTE_HOME = "route_home"
     }
 }

@@ -23,6 +23,7 @@ data class ProfileState(
     val id: String = "",
     val name: String = "",
     val email: String = "",
+    val role: String = "",
     val password: String = "",
     val isLoading: Boolean = false,
     val isSuccess: Boolean = false,
@@ -41,7 +42,7 @@ class ProfileViewModel @Inject constructor(
     private val userPrefsRepository: UserPrefsRepository,
 ) : ViewModel() {
 
-    private val _profileState = MutableStateFlow(ProfileState())
+    private val _profileState = MutableStateFlow(ProfileState(isLoading = true))
     val profileState: StateFlow<ProfileState> = _profileState.asStateFlow()
 
     init {
@@ -99,7 +100,10 @@ class ProfileViewModel @Inject constructor(
                     userPrefsRepository.saveEmail(responseBody.email ?: "")
                     userPrefsRepository.saveName(responseBody.name ?: "")
                     Log.i("+++", "userPrefsRepository updated complete")
-                    secretStorage.saveLogin(responseBody.email ?: "")
+                    secretStorage.updateUserLoginById(
+                        _profileState.value.id,
+                        responseBody.email ?: ""
+                    )
                 }
             }
         }
@@ -118,13 +122,13 @@ class ProfileViewModel @Inject constructor(
             try {
                 // Шаг 1: Проверяем данные в DataStore
                 val cachedData = userPrefsRepository.getUserPrefs()
-                val password = secretStorage.getPassword()
 
                 if (cachedData.id != null &&
                     cachedData.name != null &&
-                    cachedData.email != null &&
-                    password != null
+                    cachedData.email != null
                 ) {
+                    val user = secretStorage.getUserById(cachedData.id)
+                    val password = user.password
                     // Данные уже есть в кэше
                     // avatarUri не трогаем — им управляет observeAvatar()
                     Log.i("+++", "Загружены данные из DataStore: $cachedData")
@@ -133,6 +137,7 @@ class ProfileViewModel @Inject constructor(
                         password = password,
                         name = cachedData.name,
                         email = cachedData.email,
+                        role = cachedData.role.orEmpty(),
                         isLoading = false,
                     )
                 }

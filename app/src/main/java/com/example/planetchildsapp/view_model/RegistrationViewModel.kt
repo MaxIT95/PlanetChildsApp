@@ -7,9 +7,11 @@ import com.example.planetchildsapp.client.apis.UserApi
 import com.example.planetchildsapp.client.model.enums.Role
 import com.example.planetchildsapp.client.model.request.AuthUserRequest
 import com.example.planetchildsapp.client.model.request.UserRegistrationRequest
+import com.example.planetchildsapp.data.model.UserStorageInfo
 import com.example.planetchildsapp.data.model.parseToken
 import com.example.planetchildsapp.data.repository.UserPrefsRepository
 import com.example.planetchildsapp.service.SecretStorage
+import com.example.planetchildsapp.utils.UserRole
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -90,8 +92,12 @@ class RegistrationViewModel @Inject constructor(
         }
     }
 
-    fun register() {
+    fun register(selectedRole: UserRole) {
         val state = _uiState.value
+        val registrationRole = when (selectedRole) {
+            UserRole.Parent -> Role.PARENT
+            UserRole.Coach -> Role.COACH
+        }
 
         _errorsUuiState.update {
             it.copy(
@@ -102,7 +108,7 @@ class RegistrationViewModel @Inject constructor(
                         state.repeatPassword == state.password
             )
         }
-        Log.i("+++", "Привет!")
+        Log.i("+++", "Начало регистрации пользователя...")
         // Валидация
         if (errorsUiState.value.isNameValid &&
             errorsUiState.value.isEmailValid &&
@@ -115,7 +121,7 @@ class RegistrationViewModel @Inject constructor(
 
                     val response = userApi.registerUser(
                         UserRegistrationRequest(
-                            role = Role.PARENT,
+                            role = registrationRole,
                             lastName = " ",
                             firstName = state.name,
                             middleName = " ",
@@ -124,10 +130,13 @@ class RegistrationViewModel @Inject constructor(
                         )
                     )
 
-                    if (response.isSuccessful) {
+                    if (response.isSuccessful && response.body() != null) {
                         // кладем логин и пароль в секреты
-                        secretStorage.saveLogin(state.email)
-                        secretStorage.savePassword(state.password)
+                        val userStorage = UserStorageInfo(
+                            response.body()?.id.toString(),
+                            state.email, state.password
+                        )
+                        secretStorage.saveUser(userStorage)
 
                         val authResponse = userApi.loginUser(
                             AuthUserRequest(
@@ -160,6 +169,8 @@ class RegistrationViewModel @Inject constructor(
                         }
                         _uiState.update { it.copy(isLoading = false, isSuccess = true) }
                     } else {
+                        Log.i("+++", "ошибка регистрации: ${response.body()}, $response")
+                        _errorsUuiState.update { it.copy(errorMessage = "Ошибка регистрации ${response.message()}") }
                         _uiState.update {
                             it.copy(
                                 isLoading = false,

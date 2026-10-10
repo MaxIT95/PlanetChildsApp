@@ -44,11 +44,12 @@ class SecretStorage(context: Context) {
         prefs.edit {
             try {
                 // получаем список юзеров
-                val users = getUsers().toMutableList()
+                val users = getUsers().toMutableSet()
                 users.add(user)
                 // переводим в json
                 val gson = Gson()
                 val usersAsString = gson.toJson(users)
+                Log.i("+++", "Инфо о юзере: $usersAsString")
                 putString(KEY_USERS, usersAsString)
                 Log.i("+++", "Информация для авторизации ${user.login} сохранена успешно")
             } catch (ex: Exception) {
@@ -62,6 +63,7 @@ class SecretStorage(context: Context) {
         return try {
             val gson = Gson()
             val usersAsString = prefs.getString(KEY_USERS, "[]") ?: "[]"
+            Log.i("+++", "Строка информации о юзерах: $usersAsString")
             val type = object : TypeToken<List<UserStorageInfo>>() {}.type
             gson.fromJson(usersAsString, type) ?: emptyList()
         } catch (e: Exception) {
@@ -70,6 +72,35 @@ class SecretStorage(context: Context) {
         }
     }
 
+    fun getUserById(id: String): UserStorageInfo {
+        val users = getUsers()
+        return users.find { user -> user.id == id }
+            ?: throw RuntimeException("Пользователь с id=$id не найден!")
+    }
+
+    fun updateUserLoginById(id: String, login: String) {
+        val user = getUserById(id)
+        user.login = login
+
+
+        prefs.edit {
+            try {
+                // получаем список юзеров
+                val users = getUsers().toMutableSet()
+                val currentUser = users.find { it.id == id }
+                    ?: throw RuntimeException("Пользователь с id=$id не найден!")
+                currentUser?.login = login
+                users.add(user)
+                // переводим в json
+                val gson = Gson()
+                val usersAsString = gson.toJson(users)
+                putString(KEY_USERS, usersAsString)
+                Log.i("+++", "Информация для авторизации ${user.login} сохранена успешно")
+            } catch (ex: Exception) {
+                Log.i("+++", "Ошибка при сохранении данных пользователя: ${ex.message}")
+            }
+        }
+    }
 
     fun getAccessToken(): String? {
         return prefs.getString(KEY_ACCESS_TOKEN, null)
@@ -78,6 +109,9 @@ class SecretStorage(context: Context) {
     fun getRefreshToken(): String? = prefs.getString(KEY_REFRESH_TOKEN, null)
 
     fun clearTokens() {
-        prefs.edit { clear() }
+        prefs.edit {
+            remove(KEY_ACCESS_TOKEN)
+            remove(KEY_REFRESH_TOKEN)
+        }
     }
 }

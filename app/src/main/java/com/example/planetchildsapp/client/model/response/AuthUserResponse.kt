@@ -12,5 +12,8 @@ data class AuthUserResponse(
     val refreshToken: String,
 
     @SerialName("email")
-    val email: String? = null
+    val email: String? = null,
+
+    @SerialName("url")
+    val url: String? = null
 )

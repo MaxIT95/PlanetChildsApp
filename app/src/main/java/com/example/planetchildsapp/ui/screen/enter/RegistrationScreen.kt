@@ -102,8 +102,7 @@ fun RegistrationScreen(
 
         PasswordField(state.repeatPassword, {
             viewModel.onRepeatPasswordChange(it)
-        }, errorState.isPasswordValid, "Подтвердите пароль")
-
+        }, errorState.isRepeatPasswordValid, "Подтвердите пароль")
 
         Spacer(Modifier.padding(10.dp))
 
@@ -117,11 +116,7 @@ fun RegistrationScreen(
 
         Button(
             {
-                if (selectedRole == UserRole.Coach) {
-                    //todo переход на выбор услуг
-                } else {
-                    viewModel.register()
-                }
+                viewModel.register(selectedRole)
             },
             enabled = !state.isLoading,
             modifier = Modifier

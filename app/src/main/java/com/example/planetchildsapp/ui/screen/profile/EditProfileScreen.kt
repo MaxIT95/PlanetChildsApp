@@ -243,8 +243,11 @@ fun Logout(
 ) {
     IconButton(
         onClick = {
-            navHost.navigate(Destination.Enter.route)
             onLogout()
+            navHost.navigate(Destination.Enter.route) {
+                popUpTo(Destination.Home.route) { inclusive = true }
+                launchSingleTop = true
+            }
         },
         modifier = Modifier.size(30.dp)
     ) {

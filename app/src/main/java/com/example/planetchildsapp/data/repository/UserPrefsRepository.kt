@@ -134,6 +134,7 @@ class UserPrefsRepository @Inject constructor(
     // Очистить все данные пользователя (при logout)
     suspend fun clearUserPrefs() {
         dataStore.edit { preferences ->
+            preferences.remove(ID_KEY)
             preferences.remove(NAME_KEY)
             preferences.remove(EMAIL_KEY)
             preferences.remove(ROLE_KEY)

@@ -32,13 +32,22 @@ import com.example.planetchildsapp.ui.theme.PlanetChildAppTypography
 fun BottomNavigation(
     currentRoute: String?,
     navHostController: NavHostController,
-    modifier: Modifier
+    modifier: Modifier,
+    isCoach: Boolean = false
 ) {
-    val items = listOf(
-        NavInfoButton("Расписание", R.drawable.schedule_icon, Destination.Schedule.route),
-        NavInfoButton("Мероприятия", R.drawable.calendar, Destination.Events.route),
-        NavInfoButton("Профиль", R.drawable.account_circle, Destination.Profile.route)
-    )
+    val items = if (isCoach) {
+        listOf(
+            NavInfoButton("Расписание", R.drawable.schedule_icon, Destination.Schedule.route),
+            NavInfoButton("Клиенты", R.drawable.calendar, Destination.Clients.route),
+            NavInfoButton("Профиль", R.drawable.account_circle, Destination.Profile.route)
+        )
+    } else {
+        listOf(
+            NavInfoButton("Расписание", R.drawable.schedule_icon, Destination.Schedule.route),
+            NavInfoButton("Мероприятия", R.drawable.calendar, Destination.Events.route),
+            NavInfoButton("Профиль", R.drawable.account_circle, Destination.Profile.route)
+        )
+    }
 
     Row(
         modifier = modifier

@@ -1,5 +1,9 @@
+package com.example.planetchildsapp.ui.screen.home
+
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -7,8 +11,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,6 +48,22 @@ fun HomeScreenWithBottomBar(oldNavHost: NavHostController) {
     val currentRoute = navBackStackEntry?.destination?.route
     val profileViewModel: ProfileViewModel = hiltViewModel()
     val childViewModel: ChildViewModel = hiltViewModel()
+    val profileState by profileViewModel.profileState.collectAsState()
+    val isCoach = profileState.role == "COACH"
+    val shouldWaitForRole = profileState.isLoading && profileState.role.isBlank()
+    val homeStartDestination = if (isCoach) Destination.Clients.route else Destination.Schedule.route
+
+    LaunchedEffect(isCoach, currentRoute, shouldWaitForRole) {
+
+        if (!shouldWaitForRole && isCoach &&
+            (currentRoute == Destination.Schedule.route || currentRoute == Destination.Events.route)
+        ) {
+            navController.navigate(Destination.Schedule.route) {
+                popUpTo(Destination.Clients.route)
+                launchSingleTop = true
+            }
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -56,62 +80,101 @@ fun HomeScreenWithBottomBar(oldNavHost: NavHostController) {
                 .fillMaxSize(),
             painter = painterResource(R.drawable.background),
             contentDescription = null,
-            contentScale = ContentScale.Crop // максимально растягивает
+            contentScale = ContentScale.Crop
         )
 
         val mod = Modifier
         Scaffold(
             bottomBar = {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = mod
-                        .navigationBarsPadding()
-                        .fillMaxWidth()
-                ) {
-                    BottomNavigation(
-                        navHostController = navController,
-                        currentRoute = currentRoute,
+                if (!shouldWaitForRole) {
+                    Box(
+                        contentAlignment = Alignment.Center,
                         modifier = mod
-                    )
+                            .navigationBarsPadding()
+                            .fillMaxWidth()
+                    ) {
+                        BottomNavigation(
+                            navHostController = navController,
+                            currentRoute = currentRoute,
+                            modifier = mod,
+                            isCoach = isCoach
+                        )
+                    }
                 }
             },
             containerColor = Color.Transparent,
         ) { innerPadding ->
-            NavHost(
-                navController = navController,
-                startDestination = Destination.Schedule.route,
-                modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding())
-            ) {
-                composable(Destination.Schedule.route) {
-                    ScheduleScreen(
-                        navController,
-                        profileViewModel
-                    )
+            if (shouldWaitForRole) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(bottom = innerPadding.calculateBottomPadding()),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
                 }
+            } else {
+                NavHost(
+                    navController = navController,
+                    startDestination = homeStartDestination,
+                    modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding())
+                ) {
+                    composable(Destination.Schedule.route) {
+                        ScheduleScreen(
+                            navController,
+                            profileViewModel
+                        )
+                    }
 
-                composable(Destination.Events.route) {
-                    EventScreen(navController, profileViewModel)
-                }
+                    composable(Destination.Events.route) {
+                        EventScreen(navController, profileViewModel)
+                    }
 
-                composable(Destination.Profile.route) {
-                    ProfileScreen(
-                        navController,
-                        profileViewModel,
-                        childViewModel
-                    )
-                }
+                    composable(Destination.Clients.route) {
+                        CoachClientsScreen(profileState)
+                    }
 
-                composable(route = Destination.EditProfile.route) {
-                    EditProfileScreen(
-                        navController, oldNavHost,
-                        profileViewModel
-                    )
-                }
+                    composable(Destination.Profile.route) {
+                        ProfileScreen(
+                            navController,
+                            profileViewModel
+                        )
+                    }
 
-                composable(route = Destination.AddChild.route) {
-                    AddChildScreen(navController, childViewModel)
+                    composable(route = Destination.EditProfile.route) {
+                        EditProfileScreen(
+                            navController, oldNavHost,
+                            profileViewModel
+                        )
+                    }
+
+                    composable(route = Destination.AddChild.route) {
+                        AddChildScreen(navController, childViewModel)
+                    }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun CoachClientsScreen(profileState: com.example.planetchildsapp.view_model.ProfileState) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Top
+    ) {
+        AvatarTopBar(profileState)
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "Список клиентов тренера пока пуст",
+                color = Color.DarkGray
+            )
         }
     }
 }

@@ -32,15 +32,13 @@ import com.example.planetchildsapp.ui.navigation.Destination
 import com.example.planetchildsapp.ui.screen.home.Avatar
 import com.example.planetchildsapp.ui.theme.Dimensions.paddingMedium
 import com.example.planetchildsapp.ui.theme.PlanetChildAppTypography
-import com.example.planetchildsapp.view_model.ChildViewModel
 import com.example.planetchildsapp.view_model.ProfileState
 import com.example.planetchildsapp.view_model.ProfileViewModel
 
 @Composable
 fun ProfileScreen(
     navHost: NavHostController,
-    profileViewModel: ProfileViewModel,
-    childViewModel: ChildViewModel
+    profileViewModel: ProfileViewModel
 ) {
     val profileState by profileViewModel.profileState.collectAsState()
 
@@ -53,8 +51,6 @@ fun ProfileScreen(
             profileState = profileState,
             navHost = navHost
         )
-        Spacer(Modifier.padding(vertical = 5.dp))
-//        ChildrenView(childViewModel)
         Spacer(Modifier.padding(vertical = 10.dp))
         AddChildButton({ navHost.navigate(Destination.AddChild.route) })
     }
@@ -73,7 +69,8 @@ fun UserInfoRow(
     ) {
         Avatar(
             avatarPath = profileState.avatarPath,
-            onAvatarSelected = {}
+            onAvatarSelected = {},
+            clickable = false
         )
 
         Spacer(modifier = Modifier.width(paddingMedium))
@@ -99,11 +96,6 @@ fun UserInfoRow(
         }
     }
 }
-
-//@Composable
-//fun ChildrenView(childViewModel: ChildViewModel) {
-//    val childState by childViewModel.chil.collectAsState()
-//}
 
 @Composable
 fun AddChildButton(onClick: () -> Unit) {

@@ -5,6 +5,10 @@ import com.example.planetchildsapp.client.apis.CoachChildrenApi
 import com.example.planetchildsapp.client.apis.CoachServiceApi
 import com.example.planetchildsapp.client.apis.DictServiceApi
 import com.example.planetchildsapp.client.apis.DictServicePlaceApi
+import com.example.planetchildsapp.client.apis.EventApi
+import com.example.planetchildsapp.client.apis.CoachLinkRequestApi
+import com.example.planetchildsapp.client.apis.ScheduleApi
+import com.example.planetchildsapp.client.apis.ScheduleRowApi
 import com.example.planetchildsapp.client.apis.UserApi
 import com.example.planetchildsapp.configuration.RetrofitClient
 import com.example.planetchildsapp.service.SecretStorage
@@ -65,5 +69,29 @@ object NetworkModule {
     @Singleton
     fun provideDictServicePlaceApi(retrofit: Retrofit): DictServicePlaceApi {
         return retrofit.create(DictServicePlaceApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideEventApi(retrofit: Retrofit): EventApi {
+        return retrofit.create(EventApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideCoachLinkRequestApi(retrofit: Retrofit): CoachLinkRequestApi {
+        return retrofit.create(CoachLinkRequestApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideScheduleApi(retrofit: Retrofit): ScheduleApi {
+        return retrofit.create(ScheduleApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideScheduleRowApi(retrofit: Retrofit): ScheduleRowApi {
+        return retrofit.create(ScheduleRowApi::class.java)
     }
 }

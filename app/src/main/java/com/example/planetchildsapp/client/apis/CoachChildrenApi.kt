@@ -12,7 +12,7 @@ interface CoachChildrenApi {
      * Link a child to the current coach
      * Creates a link between the authenticated coach and a child
      */
-    @POST("/api/coach-children/link-child")
+    @POST("/api/coach-clients/link-child")
     suspend fun linkChild(
         @Body request: LinkChildRequest
     ): Response<CoachChildrenResponse>
@@ -21,7 +21,7 @@ interface CoachChildrenApi {
      * Get current coach's linked children
      * Retrieves all children linked to the currently authenticated coach with pagination
      */
-    @GET("/api/coach-children")
+    @GET("/api/coach-clients")
     suspend fun getMyLinkedChildren(
         @Query("pageNumber") pageNumber: Int? = 0,
         @Query("pageSize") pageSize: Int? = 20
@@ -31,8 +31,8 @@ interface CoachChildrenApi {
      * Unlink a child from coach
      * Removes the link between the coach and a child
      */
-    @DELETE("/api/coach-children/{coachChildrenId}")
+    @DELETE("/api/coach-clients/{coachClientsId}")
     suspend fun unlinkChild(
-        @Path("coachChildrenId") coachChildrenId: Long
+        @Path("coachClientsId") coachClientsId: Long
     ): Response<Unit>
 }
